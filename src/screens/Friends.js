@@ -23,9 +23,13 @@ import { SPACING, moderateScale } from '../utils/dimensions';
 import { db, auth } from '../config/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
+import { useDebts } from '../hooks/useDebts';
+import { formatCurrency } from '../utils/formatters';
+import { useNavigation } from '@react-navigation/native';
 
 export function Friends() {
   const { colors, textStyles } = useTheme();
+  const { debtsAsCreditor, debtsAsDebtor } = useDebts();
   const [searchUsername, setSearchUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [friends, setFriends] = useState([]);
@@ -37,11 +41,24 @@ export function Friends() {
   const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
+  const navigation = useNavigation();
 
   useEffect(() => {
     initializeUserData();
     fetchFriends();
   }, []);
+
+  const calculateBalanceWithFriend = (friendId) => {
+    const debtsAsCreditorToFriend = debtsAsCreditor
+      .filter(debt => debt.debtorId === friendId)
+      .reduce((sum, debt) => sum + (debt.paid ? 0 : debt.amount), 0);
+
+    const debtsAsDebtorToFriend = debtsAsDebtor
+      .filter(debt => debt.creditorId === friendId)
+      .reduce((sum, debt) => sum + (debt.paid ? 0 : debt.amount), 0);
+
+    return debtsAsCreditorToFriend - debtsAsDebtorToFriend;
+  };
 
   const initializeUserData = async () => {
     try {
@@ -287,28 +304,51 @@ export function Friends() {
     );
   };
 
-  const renderFriendItem = ({ item }) => (
-    <View style={[styles.friendItem, { backgroundColor: colors.card }]}>
-      <Image 
-        source={{ uri: item.photoURL }} 
-        style={styles.friendPhoto}
-        defaultSource={require('../assets/images/logoPequena.png')}
-      />
-      <View style={styles.friendInfo}>
-        <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
-          {item.username}
-        </Text>
-        <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
-          {item.email}
-        </Text>
-      </View>
-      <TouchableOpacity 
-        style={[styles.removeFriendButton]}
-        onPress={() => handleRemoveFriend(item)}
-      >
-        <Ionicons name="close-circle-outline" size={24} color={colors.text2} />
-      </TouchableOpacity>
-    </View>
+  const renderFriendItem = ({ item: friend, index }) => {
+    const balance = calculateBalanceWithFriend(friend.id);
+    const isPositive = balance > 0;
+    const isNegative = balance < 0;
+
+    return (
+      <>
+        <TouchableOpacity
+          style={[styles.friendItem, { backgroundColor: colors.cardBackground }]}
+          onPress={() => {
+            // Aqui você pode adicionar a lógica que desejar ao clicar em um amigo
+          }}
+        >
+          <View style={styles.friendInfo}>
+            <Image
+              source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+              style={styles.friendPhoto}
+            />
+            <View style={styles.friendTextContainer}>
+              <Text style={[textStyles.body, { color: colors.text }]}>
+                {friend.username}
+              </Text>
+              <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
+                {friend.email}
+              </Text>
+            </View>
+          </View>
+          <Text style={[
+            textStyles.body,
+            {
+              color: isPositive ? colors.success : isNegative ? colors.error : colors.text,
+            }
+          ]}>
+            {isPositive ? '+' : ''}{formatCurrency(balance.toString())}
+          </Text>
+        </TouchableOpacity>
+        {index !== friends.length - 1 && (
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+        )}
+      </>
+    );
+  };
+
+  const renderSeparator = () => (
+    <View style={[styles.separator, { backgroundColor: colors.border }]} />
   );
 
   const renderSearchResult = ({ item }) => (
@@ -318,7 +358,7 @@ export function Friends() {
         style={styles.friendPhoto}
         defaultSource={require('../assets/images/logoPequena.png')}
       />
-      <View style={styles.friendInfo}>
+      <View style={styles.searchResultInfo}>
         <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
           {item.username}
         </Text>
@@ -348,70 +388,40 @@ export function Friends() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[textStyles.h4, { color: colors.text, marginBottom: SPACING.md }]}>
-        Amigos
-      </Text>
+      <View style={styles.header}>
+        <Text style={[textStyles.h2, { color: colors.text }]}>Amigos</Text>
+      </View>
 
       {loadingFriends ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <ActivityIndicator size="large" color={colors.primary} />
       ) : (
-        <View style={styles.contentContainer}>
-          {friends.length > 0 ? (
-            <FlatList
-              data={friends}
-              renderItem={renderFriendItem}
-              keyExtractor={item => item.id}
-              contentContainerStyle={styles.friendsList}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={[colors.primary]}
-                  tintColor={colors.primary}
-                />
-              }
-              ListFooterComponent={
-                <View style={styles.footerContainer}>
-                  <TouchableOpacity 
-                    style={[styles.addButton, { 
-                      backgroundColor: colors.background,
-                      borderColor: colors.primary,
-                    }]}
-                    onPress={() => setIsSearchModalVisible(true)}
-                  >
-                    <Ionicons name="person-add-outline" size={20} color={colors.primary} />
-                    <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
-                      Adicionar amigos
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              }
-            />
-          ) : (
-            <View style={[styles.centerContent, { borderColor: colors.border }]}>
-              <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginBottom: SPACING.md }]}>
-                Você ainda não tem amigos adicionados.
-              </Text>
-              <View style={styles.footerContainer}>
-                <TouchableOpacity 
-                  style={[styles.addButton, { 
-                    backgroundColor: colors.background,
-                    borderColor: colors.primary 
-                  }]}
-                  onPress={() => setIsSearchModalVisible(true)}
-                >
-                  <Ionicons name="person-add-outline" size={20} color={colors.primary} />
-                  <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
-                    Adicionar amigos
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        <FlatList
+          data={friends}
+          renderItem={renderFriendItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          ListFooterComponent={
+            <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={() => setIsSearchModalVisible(true)}
+                style={[styles.addButton, { borderColor: colors.primary }]}
+              >
+                <Ionicons name="person-add" size={20} color={colors.primary} />
+                <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
+                  Adicionar Amigo
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        />
       )}
 
       <Modal
@@ -555,8 +565,9 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(15),
     padding: SPACING.lg,
   },
-  contentContainer: {
-    flex: 1,
+  mainContent: {
+    flex: 0.9,
+    marginBottom: SPACING.md,
   },
   friendsList: {
     flexGrow: 1,
@@ -564,7 +575,8 @@ const styles = StyleSheet.create({
   friendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
+    justifyContent: 'space-between',
+    padding: SPACING.sm,
     borderRadius: moderateScale(10),
     marginBottom: SPACING.sm,
     elevation: 2,
@@ -575,6 +587,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.15,
     shadowRadius: 2,
+    minHeight: moderateScale(60),
   },
   friendPhoto: {
     width: moderateScale(50),
@@ -583,29 +596,29 @@ const styles = StyleSheet.create({
     marginRight: SPACING.md,
   },
   friendInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
+  friendDetails: {
+    marginLeft: SPACING.sm,
+    flex: 1,
+    justifyContent: 'center',
+  },
   footerContainer: {
-    alignItems: 'center',
     paddingVertical: SPACING.md,
+    alignItems: 'center',
+    borderTopWidth: 1,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     borderRadius: moderateScale(8),
     borderWidth: 1,
-    backgroundColor: 'white',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    alignSelf: 'center',
+    backgroundColor: 'transparent',
   },
   modalContainer: {
     flex: 1,
@@ -655,6 +668,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
   },
+  searchResultInfo: {
+    flex: 1,
+  },
   addFriendButton: {
     width: moderateScale(40),
     height: moderateScale(40),
@@ -692,10 +708,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  removeFriendButton: {
+  removeButton: {
     padding: SPACING.sm,
     marginLeft: SPACING.sm,
+  },
+  balanceContainer: {
+    alignItems: 'flex-end',
     justifyContent: 'center',
+  },
+  avatar: {
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
+  },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.md,
+  },
+  listContent: {
+    paddingBottom: SPACING.md,
+  },
+  separator: {
+    height: 1,
+    opacity: 0.5,
+    marginVertical: SPACING.xs,
+  },
+  friendTextContainer: {
+    marginLeft: SPACING.sm,
+    flex: 1,
+    justifyContent: 'center',
   },
 }); 

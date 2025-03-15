@@ -365,7 +365,6 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
   },
   balanceCard: {
     padding: SPACING.md,
@@ -412,8 +411,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   separator: {
-    height: 3,
+    height: 2,
     marginHorizontal: SPACING.lg,
-    opacity: 0.3,
+    opacity: 1,
   },
 }); 

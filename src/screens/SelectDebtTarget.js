@@ -78,14 +78,14 @@ export default function SelectDebtTarget({ navigation }) {
         <Text style={[textStyles.body, { color: colors.text }]}>
           {item.username}
         </Text>
-        <Text style={[textStyles.caption, { color: colors.textSecondary }]}>
+        <Text style={[textStyles.caption, { color: colors.text2 }]}>
           {item.email}
         </Text>
       </View>
       <Ionicons 
         name="chevron-forward" 
         size={moderateScale(20)} 
-        color={colors.textSecondary} 
+        color={colors.text2} 
       />
     </TouchableOpacity>
   );
@@ -146,7 +146,7 @@ export default function SelectDebtTarget({ navigation }) {
     if (activeTab === 'groups') {
       return (
         <View style={styles.centerContainer}>
-          <Text style={[textStyles.body, { color: colors.textSecondary }]}>
+          <Text style={[textStyles.body, { color: colors.text2 }]}>
             Em breve você poderá dividir despesas em grupo!
           </Text>
         </View>

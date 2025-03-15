@@ -10,36 +10,43 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
+import { useNavigation } from '@react-navigation/native';
 
 export function BottomToolbar({ activeTab, onTabChange }) {
   const { colors, textStyles } = useTheme();
+  const navigation = useNavigation();
 
   const menuItems = [
     {
       name: 'Amigos',
       icon: 'person',
       tab: 'friends',
+      onPress: () => onTabChange('friends'),
     },
     {
       name: 'Grupos',
       icon: 'people',
       tab: 'groups',
+      onPress: () => onTabChange('groups'),
     },
     {
       name: 'Novo',
       icon: 'add-sharp',
       tab: 'new',
       isCenter: true,
+      onPress: () => onTabChange('new'),
     },
     {
       name: 'Atividade',
       icon: 'pulse',
       tab: 'activity',
+      onPress: () => onTabChange('activity'),
     },
     {
       name: 'Perfil',
       icon: 'person-circle',
       tab: 'profile',
+      onPress: () => navigation.navigate('Profile'),
     },
   ];
 
@@ -62,7 +69,7 @@ export function BottomToolbar({ activeTab, onTabChange }) {
                 styles.menuItem,
                 item.isCenter && styles.centerMenuItem
               ]}
-              onPress={() => onTabChange(item.tab)}
+              onPress={item.onPress}
             >
               {item.isCenter ? (
                 <View style={styles.centerButtonWrapper}>
@@ -70,7 +77,7 @@ export function BottomToolbar({ activeTab, onTabChange }) {
                     <Ionicons 
                       name={item.icon}
                       size={38} 
-                      color={colors.textInvert}
+                      color={colors.white}
                     />
                   </View>
                 </View>
