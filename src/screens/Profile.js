@@ -7,14 +7,19 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { formatCurrency } from '../utils/formatters';
+import { Logo } from '../components/Logo';
+import { useNavigation } from '@react-navigation/native';
 
 export function Profile({ user, userTotals, onEditProfile, onLogout }) {
   const { colors, textStyles } = useTheme();
+  const navigation = useNavigation();
 
   const menuItems = [
     {
@@ -45,89 +50,102 @@ export function Profile({ user, userTotals, onEditProfile, onLogout }) {
     {
       icon: 'log-out-outline',
       title: 'Sair',
-      onPress: onLogout,
+      onPress: () => navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      }),
       color: colors.error,
     },
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View style={styles.photoContainer}>
-          <Image
-            source={{ uri: user?.photoURL || 'https://via.placeholder.com/150' }}
-            style={styles.photo}
-          />
-          <TouchableOpacity style={styles.editPhotoButton}>
-            <Ionicons name="camera" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-        <Text style={[textStyles.h4, { color: colors.text, marginTop: SPACING.sm }]}>
-          {user?.username || 'Usuário'}
-        </Text>
-        <Text style={[textStyles.body, { color: colors.text2 }]}>
-          {user?.email}
-        </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} />
+      <View style={[styles.header, { 
+        borderBottomColor: colors.border + '20',
+        backgroundColor: colors.cardBackground 
+      }]}>  
+        <Logo size={moderateScale(48)} />
+        <TouchableOpacity onPress={onLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={moderateScale(24)} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[textStyles.caption, { color: colors.text2 }]}>
-            A receber
-          </Text>
-          <Text style={[textStyles.h4, { color: colors.success, marginTop: 4 }]}>
-            {formatCurrency(userTotals?.totalToReceive || 0)}
-          </Text>
-        </View>
-
-        <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[textStyles.caption, { color: colors.text2 }]}>
-            A pagar
-          </Text>
-          <Text style={[textStyles.h4, { color: colors.error, marginTop: 4 }]}>
-            {formatCurrency(userTotals?.totalToPay || 0)}
-          </Text>
-        </View>
-
-        <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[textStyles.caption, { color: colors.text2 }]}>
-            Saldo
-          </Text>
-          <Text style={[
-            textStyles.h4,
-            { color: (userTotals?.totalToReceive - userTotals?.totalToPay) >= 0 ? colors.success : colors.error, marginTop: 4 }
-          ]}>
-            {formatCurrency((userTotals?.totalToReceive || 0) - (userTotals?.totalToPay || 0))}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.menuContainer}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.menuItem, { backgroundColor: colors.cardBackground }]}
-            onPress={item.onPress}
-          >
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name={item.icon}
-                size={24}
-                color={item.color || colors.text}
-              />
-              <Text style={[textStyles.body, { color: item.color || colors.text, marginLeft: SPACING.md }]}>
-                {item.title}
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.text2}
+      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}>  
+        <View style={styles.headerContent}>
+          <View style={styles.photoContainer}>
+            <Image
+              source={{ uri: user?.photoURL || 'https://via.placeholder.com/150' }}
+              style={styles.photo}
             />
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+            <TouchableOpacity style={styles.editPhotoButton}>
+              <Ionicons name="camera" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[textStyles.h4, { color: colors.text, marginTop: SPACING.sm }]}>  
+            {user?.username || 'Usuário'}
+          </Text>
+          <Text style={[textStyles.body, { color: colors.text2 }]}>  
+            {user?.email}
+          </Text>
+        </View>
+
+        <View style={styles.statsContainer}>  
+          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
+            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
+              A receber
+            </Text>
+            <Text style={[textStyles.h4, { color: colors.success, marginTop: 4 }]}>  
+              {formatCurrency(userTotals?.totalToReceive || 0)}
+            </Text>
+          </View>
+
+          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
+            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
+              A pagar
+            </Text>
+            <Text style={[textStyles.h4, { color: colors.error, marginTop: 4 }]}>  
+              {formatCurrency(userTotals?.totalToPay || 0)}
+            </Text>
+          </View>
+
+          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
+            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
+              Saldo
+            </Text>
+            <Text style={[textStyles.h4, { color: (userTotals?.totalToReceive - userTotals?.totalToPay) >= 0 ? colors.success : colors.error, marginTop: 4 }]}>  
+              {formatCurrency((userTotals?.totalToReceive || 0) - (userTotals?.totalToPay || 0))}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.menuContainer}>  
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.menuItem, { backgroundColor: colors.cardBackground }]}
+              onPress={item.onPress}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name={item.icon}
+                  size={24}
+                  color={item.color || colors.text}
+                />
+                <Text style={[textStyles.body, { color: item.color || colors.text, marginLeft: SPACING.md }]}>  
+                  {item.title}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.text2}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -136,6 +154,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  logoutButton: {
+    padding: SPACING.xs,
+  },
+  content: {
+    flex: 1,
+  },
+  headerContent: {
     alignItems: 'center',
     padding: SPACING.lg,
     paddingTop: SPACING.xl,
