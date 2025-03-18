@@ -14,12 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.leotaschin.TaPago",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para permitir que você escolha uma foto de perfil.",
         "NSCameraUsageDescription": "Precisamos acessar sua câmera para permitir que você tire uma foto de perfil.",
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "bundleIdentifier": "com.leotaschin.TaPago"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,6 +40,9 @@
       "eas": {
         "projectId": "c6a254b3-a36a-4a9a-8352-fc4abbd52b6c"
       }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
     }
   }
 }
