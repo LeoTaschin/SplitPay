@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SplitPay",
-    "slug": "SplitPay",
+    "slug": "splitpay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +19,9 @@
         "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para permitir que você escolha uma foto de perfil.",
         "NSCameraUsageDescription": "Precisamos acessar sua câmera para permitir que você tire uma foto de perfil.",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "aps": {
           "alert": {
             "badge": 1,
@@ -49,7 +51,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "splitpay-7c380"
+        "projectId": "111040a7-3e4b-418b-8c57-4c0908b83fc0"
       }
     },
     "updates": {
@@ -59,18 +61,18 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#ffffff",
-          "sounds": ["./assets/notification-sound.wav"]
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/notification-icon.png",
+      "icon": "./assets/icon.png",
       "color": "#ffffff",
       "iosDisplayInForeground": true,
       "androidMode": "default",
       "androidCollapsedTitle": "Nova notificação"
-    }
+    },
+    "owner": "leotaschin"
   }
 }
