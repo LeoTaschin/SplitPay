@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        shadowColor: '#000',
       },
     }),
   },
@@ -367,8 +367,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   balanceCard: {
-    padding: SPACING.md,
-    borderRadius: moderateScale(12),
+    padding: SPACING.lg,
+    borderRadius: moderateScale(16),
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 2,
+        shadowColor: '#000',
       },
     }),
   },

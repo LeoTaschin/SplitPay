@@ -358,14 +358,20 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: moderateScale(12),
     marginBottom: SPACING.md,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   targetInfo: {
     alignItems: 'center',
@@ -383,14 +389,20 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: moderateScale(12),
     marginBottom: SPACING.xl,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   inputContainer: {
     marginBottom: SPACING.lg,
@@ -448,14 +460,20 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderRadius: moderateScale(12),
     marginBottom: SPACING.xl,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   confirmationHeader: {
     flexDirection: 'row',
@@ -502,5 +520,46 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(40),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    marginTop: moderateScale(100),
+    borderTopLeftRadius: moderateScale(20),
+    borderTopRightRadius: moderateScale(20),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: -2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
+  },
+  successCircle: {
+    width: moderateScale(80),
+    height: moderateScale(80),
+    borderRadius: moderateScale(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
 }); 

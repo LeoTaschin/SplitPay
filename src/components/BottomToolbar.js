@@ -186,12 +186,53 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: moderateScale(-2),
+      height: -2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: moderateScale(3.84),
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   androidShadow: {
     elevation: 5,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderTopWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: -2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
+  },
+  modalContainer: {
+    flex: 1,
+    marginTop: moderateScale(100),
+    borderTopLeftRadius: moderateScale(20),
+    borderTopRightRadius: moderateScale(20),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: -2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
 }); 

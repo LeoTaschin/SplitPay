@@ -64,18 +64,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: moderateScale(48),
     borderWidth: 1,
-    borderRadius: moderateScale(8),
+    borderRadius: moderateScale(10),
     paddingHorizontal: SPACING.md,
     fontSize: moderateScale(16),
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
         shadowOpacity: 0.1,
         shadowRadius: 2,
       },
       android: {
-        elevation: 1,
+        shadowColor: '#000',
       },
     }),
   },

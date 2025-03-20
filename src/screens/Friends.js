@@ -579,14 +579,20 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: moderateScale(10),
     marginBottom: SPACING.sm,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
     minHeight: moderateScale(60),
   },
   friendPhoto: {
@@ -625,14 +631,20 @@ const styles = StyleSheet.create({
     marginTop: moderateScale(100),
     borderTopLeftRadius: moderateScale(20),
     borderTopRightRadius: moderateScale(20),
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: -2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   modalHeader: {
     flexDirection: 'row',
@@ -659,14 +671,20 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: moderateScale(10),
     marginBottom: SPACING.sm,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   searchResultInfo: {
     flex: 1,
@@ -699,14 +717,20 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(40),
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   removeButton: {
     padding: SPACING.sm,

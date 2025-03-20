@@ -133,14 +133,20 @@ const styles = StyleSheet.create({
     marginTop: moderateScale(100),
     borderTopLeftRadius: moderateScale(20),
     borderTopRightRadius: moderateScale(20),
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: -2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        shadowColor: '#000',
+      },
+    }),
   },
   modalHeader: {
     flexDirection: 'row',
