@@ -71,34 +71,44 @@ export function NotificationsScreen({ navigation }) {
     }
   };
 
+  const registerForPushNotifications = async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert(
+          'Permissão necessária',
+          'Para receber notificações, precisamos da sua permissão.'
+        );
+        return;
+      }
+
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: '111040a7-3e4b-418b-8c57-4c0908b83fc0',
+      });
+
+      if (token.data) {
+        await updateUserPushToken(token.data);
+      }
+    } catch (error) {
+      console.error('Error toggling push notifications:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível configurar as notificações. Tente novamente.'
+      );
+    }
+  };
+
   const handlePushToggle = async (value) => {
     try {
       if (value) {
-        // Solicitar permissão para notificações
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            'Permissão Necessária',
-            'Para receber notificações, você precisa permitir o acesso nas configurações do seu dispositivo.',
-            [
-              { text: 'OK', onPress: () => setPushEnabled(false) }
-            ]
-          );
-          return;
-        }
-
-        // Registrar para receber notificações push
-        const tokenData = await Notifications.getExpoPushTokenAsync({
-          projectId: 'c6a254b3-a36a-4a9a-8352-fc4abbd52b6c',
-        });
-
-        // Salvar o token no Firestore
-        const user = auth.currentUser;
-        if (user) {
-          await updateDoc(doc(db, 'users', user.uid), {
-            pushToken: tokenData.data,
-          });
-        }
+        await registerForPushNotifications();
       } else {
         // Remover o token do Firestore quando desativar
         const user = auth.currentUser;
