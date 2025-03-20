@@ -2,7 +2,6 @@
   "name": "tapagp",
   "version": "1.0.0",
   "main": "index.js",
-  
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -14,10 +13,12 @@
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
+    "date-fns": "^4.1.0",
     "expo": "~52.0.38",
     "expo-dev-client": "~5.0.14",
     "expo-image-picker": "~16.0.6",
     "expo-linear-gradient": "~14.0.2",
+    "expo-notifications": "~0.29.14",
     "expo-status-bar": "~2.0.1",
     "firebase": "^10.14.1",
     "react": "18.3.1",

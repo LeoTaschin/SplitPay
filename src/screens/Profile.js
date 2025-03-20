@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,47 +13,87 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
-import { formatCurrency } from '../utils/formatters';
 import { Logo } from '../components/Logo';
 import { useNavigation } from '@react-navigation/native';
+import { db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '../hooks/useAuth';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-export function Profile({ user, userTotals, onEditProfile, onLogout }) {
+export function Profile({ onEditProfile }) {
   const { colors, textStyles } = useTheme();
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const [username, setUsername] = useState('');
+  const [joinDate, setJoinDate] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user?.uid) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUsername(userData.username);
+            if (userData.createdAt) {
+              setJoinDate(userData.createdAt.toDate());
+            }
+          }
+        } catch (error) {
+          console.error('Profile - fetchUserData - Erro:', error);
+        }
+      }
+    };
+
+    if (user?.uid) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  const userProfilePic = user?.photoURL || 'default_profile_pic_url';
 
   const menuItems = [
     {
       icon: 'person-outline',
       title: 'Editar Perfil',
-      onPress: onEditProfile,
+      onPress: () => navigation.navigate('EditProfile'),
+    },
+    {
+      icon: 'settings-outline',
+      title: 'Configurações',
+      onPress: () => navigation.navigate('Settings'),
     },
     {
       icon: 'notifications-outline',
       title: 'Notificações',
-      onPress: () => {},
+      onPress: () => navigation.navigate('NotificationsScreen'),
     },
     {
-      icon: 'lock-closed-outline',
+      icon: 'shield-outline',
       title: 'Privacidade',
-      onPress: () => {},
+      onPress: () => navigation.navigate('Privacy'),
     },
     {
       icon: 'help-circle-outline',
       title: 'Ajuda',
-      onPress: () => {},
+      onPress: () => navigation.navigate('Help'),
     },
     {
       icon: 'information-circle-outline',
       title: 'Sobre',
-      onPress: () => {},
+      onPress: () => navigation.navigate('About'),
     },
     {
       icon: 'log-out-outline',
       title: 'Sair',
-      onPress: () => navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      }),
+      onPress: () => {
+        // Add logout logic here
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      },
       color: colors.error,
     },
   ];
@@ -61,87 +101,83 @@ export function Profile({ user, userTotals, onEditProfile, onLogout }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} />
-      <View style={[styles.header, { 
-        borderBottomColor: colors.border + '20',
-        backgroundColor: colors.cardBackground 
-      }]}>  
+      <View style={[styles.header, { backgroundColor: colors.background }]}>  
         <Logo size={moderateScale(48)} />
-        <TouchableOpacity onPress={onLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={moderateScale(24)} color={colors.text} />
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Home')}
+          style={styles.homeButton}
+        >
+          <Ionicons name="home-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}>  
+      <ScrollView style={styles.content}>  
         <View style={styles.headerContent}>
           <View style={styles.photoContainer}>
             <Image
-              source={{ uri: user?.photoURL || 'https://via.placeholder.com/150' }}
-              style={styles.photo}
+              source={{ uri: userProfilePic }}
+              style={[styles.photo, { 
+                borderColor: colors.primary,
+                backgroundColor: colors.surface 
+              }]}
             />
-            <TouchableOpacity style={styles.editPhotoButton}>
-              <Ionicons name="camera" size={20} color={colors.primary} />
-            </TouchableOpacity>
           </View>
-          <Text style={[textStyles.h4, { color: colors.text, marginTop: SPACING.sm }]}>  
-            {user?.username || 'Usuário'}
-          </Text>
-          <Text style={[textStyles.body, { color: colors.text2 }]}>  
-            {user?.email}
-          </Text>
-        </View>
-
-        <View style={styles.statsContainer}>  
-          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
-            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
-              A receber
+          <View style={styles.userInfo}>
+            <Text style={[textStyles.h3, { 
+              color: colors.text,
+              marginBottom: SPACING.xs 
+            }]}>
+              {username || 'Usuário'}
             </Text>
-            <Text style={[textStyles.h4, { color: colors.success, marginTop: 4 }]}>  
-              {formatCurrency(userTotals?.totalToReceive || 0)}
+            <Text style={[textStyles.body, { 
+              color: colors.text2,
+              marginBottom: SPACING.xs
+            }]}>
+              {user?.email}
             </Text>
-          </View>
-
-          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
-            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
-              A pagar
-            </Text>
-            <Text style={[textStyles.h4, { color: colors.error, marginTop: 4 }]}>  
-              {formatCurrency(userTotals?.totalToPay || 0)}
-            </Text>
-          </View>
-
-          <View style={[styles.statCard, { backgroundColor: colors.cardBackground }]}>  
-            <Text style={[textStyles.caption, { color: colors.text2 }]}>  
-              Saldo
-            </Text>
-            <Text style={[textStyles.h4, { color: (userTotals?.totalToReceive - userTotals?.totalToPay) >= 0 ? colors.success : colors.error, marginTop: 4 }]}>  
-              {formatCurrency((userTotals?.totalToReceive || 0) - (userTotals?.totalToPay || 0))}
-            </Text>
+            {joinDate && (
+              <Text style={[textStyles.bodySmall, { 
+                color: colors.text2
+              }]}>
+                Membro desde {format(joinDate, "dd/MM/yyyy")}
+              </Text>
+            )}
           </View>
         </View>
 
         <View style={styles.menuContainer}>  
           {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.menuItem, { backgroundColor: colors.cardBackground }]}
-              onPress={item.onPress}
-            >
-              <View style={styles.menuItemLeft}>
+            <React.Fragment key={index}>
+              <TouchableOpacity
+                style={[styles.menuItem]}
+                onPress={item.onPress}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Ionicons
+                    name={item.icon}
+                    size={24}
+                    color={item.color || colors.primary}
+                  />
+                  <Text style={[
+                    textStyles.body, 
+                    { 
+                      color: item.color || colors.text,
+                      marginLeft: SPACING.md 
+                    }
+                  ]}>  
+                    {item.title}
+                  </Text>
+                </View>
                 <Ionicons
-                  name={item.icon}
-                  size={24}
-                  color={item.color || colors.text}
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.text2}
                 />
-                <Text style={[textStyles.body, { color: item.color || colors.text, marginLeft: SPACING.md }]}>  
-                  {item.title}
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.text2}
-              />
-            </TouchableOpacity>
+              </TouchableOpacity>
+              {index !== menuItems.length - 1 && (
+                <View style={[styles.separator, { backgroundColor: colors.border }]} />
+              )}
+            </React.Fragment>
           ))}
         </View>
       </ScrollView>
@@ -159,106 +195,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  logoutButton: {
-    padding: SPACING.xs,
   },
   content: {
     flex: 1,
   },
   headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.lg,
-    paddingTop: SPACING.xl,
   },
   photoContainer: {
-    position: 'relative',
-    marginBottom: SPACING.sm,
+    marginRight: SPACING.lg,
   },
   photo: {
-    width: moderateScale(120),
-    height: moderateScale(120),
-    borderRadius: moderateScale(60),
-    backgroundColor: '#f0f0f0',
+    width: moderateScale(100),
+    height: moderateScale(100),
+    borderRadius: moderateScale(50),
+    borderWidth: moderateScale(2),
   },
-  editPhotoButton: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff',
-    borderRadius: moderateScale(20),
-    padding: moderateScale(8),
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  statCard: {
+  userInfo: {
     flex: 1,
-    padding: SPACING.md,
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   menuContainer: {
-    padding: SPACING.lg,
-    gap: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: SPACING.md,
-    borderRadius: moderateScale(12),
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  separator: {
+    height: 1,
+    opacity: 0.5,
+    marginVertical: SPACING.xs,
+  },
+  homeButton: {
+    padding: SPACING.xs,
   },
 }); 

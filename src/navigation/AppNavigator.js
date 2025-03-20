@@ -22,6 +22,12 @@ import Home from '../screens/Home';
 import { Profile } from '../screens/Profile';
 import { NewDebt } from '../screens/NewDebt';
 import { Activity } from '../screens/Activity';
+import { EditProfile } from '../screens/EditProfile';
+import { Settings } from '../screens/Settings';
+import { NotificationsScreen } from '../screens/Notifications';
+import { Privacy } from '../screens/Privacy';
+import { Help } from '../screens/Help';
+import { About } from '../screens/About';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -133,6 +139,54 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Profile" 
           component={Profile}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="EditProfile" 
+          component={EditProfile}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={Settings}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="NotificationsScreen" 
+          component={NotificationsScreen}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="Privacy" 
+          component={Privacy}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="Help" 
+          component={Help}
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen 
+          name="About" 
+          component={About}
           options={{
             animation: 'slide_from_right',
             animationDuration: 300,
