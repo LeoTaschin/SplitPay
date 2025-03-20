@@ -14,29 +14,48 @@ import { SPACING, moderateScale } from '../utils/dimensions';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db, auth } from '../config/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+
+// Configurar o comportamento das notificações
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export function NotificationsScreen({ navigation }) {
   const { colors, textStyles } = useTheme();
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [debtEnabled, setDebtEnabled] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadNotificationSettings();
-    checkNotificationPermissions();
   }, []);
 
   const loadNotificationSettings = async () => {
     try {
+      setIsLoading(true);
+      // Carregar configurações do AsyncStorage
       const settings = await AsyncStorage.getItem('notificationSettings');
       if (settings) {
         const parsed = JSON.parse(settings);
         setPushEnabled(parsed.push);
-        setDebtEnabled(parsed.debt);
         setPaymentEnabled(parsed.payment);
+      }
+
+      // Verificar permissões de notificação
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      if (existingStatus === 'granted') {
+        setPushEnabled(true);
       }
     } catch (error) {
       console.error('Error loading notification settings:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -44,7 +63,6 @@ export function NotificationsScreen({ navigation }) {
     try {
       const settings = {
         push: pushEnabled,
-        debt: debtEnabled,
         payment: paymentEnabled,
       };
       await AsyncStorage.setItem('notificationSettings', JSON.stringify(settings));
@@ -53,43 +71,60 @@ export function NotificationsScreen({ navigation }) {
     }
   };
 
-  const checkNotificationPermissions = async () => {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      Alert.alert(
-        'Permissão Necessária',
-        'Para receber notificações, você precisa permitir o acesso nas configurações do seu dispositivo.',
-        [
-          { text: 'OK', onPress: () => setPushEnabled(false) }
-        ]
-      );
-      return;
-    }
-  };
-
   const handlePushToggle = async (value) => {
-    if (value) {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        const { status: newStatus } = await Notifications.requestPermissionsAsync();
-        if (newStatus !== 'granted') {
+    try {
+      if (value) {
+        // Solicitar permissão para notificações
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
           Alert.alert(
-            'Permissão Negada',
-            'Você precisa permitir notificações nas configurações do dispositivo para ativar esta função.'
+            'Permissão Necessária',
+            'Para receber notificações, você precisa permitir o acesso nas configurações do seu dispositivo.',
+            [
+              { text: 'OK', onPress: () => setPushEnabled(false) }
+            ]
           );
           return;
         }
+
+        // Registrar para receber notificações push
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: 'c6a254b3-a36a-4a9a-8352-fc4abbd52b6c',
+        });
+
+        // Salvar o token no Firestore
+        const user = auth.currentUser;
+        if (user) {
+          await updateDoc(doc(db, 'users', user.uid), {
+            pushToken: tokenData.data,
+          });
+        }
+      } else {
+        // Remover o token do Firestore quando desativar
+        const user = auth.currentUser;
+        if (user) {
+          await updateDoc(doc(db, 'users', user.uid), {
+            pushToken: null,
+          });
+        }
       }
+
+      setPushEnabled(value);
+      await saveNotificationSettings();
+    } catch (error) {
+      console.error('Error toggling push notifications:', error);
+      Alert.alert('Erro', 'Não foi possível alterar as configurações de notificação');
     }
-    setPushEnabled(value);
-    saveNotificationSettings();
+  };
+
+  const handlePaymentToggle = async (value) => {
+    try {
+      setPaymentEnabled(value);
+      await saveNotificationSettings();
+    } catch (error) {
+      console.error('Error toggling payment notifications:', error);
+      Alert.alert('Erro', 'Não foi possível alterar as configurações de notificação');
+    }
   };
 
   const NotificationItem = ({ title, description, value, onValueChange }) => (
@@ -107,6 +142,16 @@ export function NotificationsScreen({ navigation }) {
     </View>
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[textStyles.body, { color: colors.text }]}>Carregando...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
@@ -120,29 +165,16 @@ export function NotificationsScreen({ navigation }) {
       <View style={styles.content}>
         <NotificationItem
           title="Notificações Push"
-          description="Receba notificações no seu dispositivo"
+          description="Receba notificações quando alguém registrar uma dívida para você"
           value={pushEnabled}
           onValueChange={handlePushToggle}
-        />
-
-        <NotificationItem
-          title="Novas Cobranças"
-          description="Seja notificado quando receber uma nova cobrança"
-          value={debtEnabled}
-          onValueChange={(value) => {
-            setDebtEnabled(value);
-            saveNotificationSettings();
-          }}
         />
 
         <NotificationItem
           title="Pagamentos"
           description="Receba confirmações de pagamentos"
           value={paymentEnabled}
-          onValueChange={(value) => {
-            setPaymentEnabled(value);
-            saveNotificationSettings();
-          }}
+          onValueChange={handlePaymentToggle}
         />
       </View>
     </SafeAreaView>
@@ -168,6 +200,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.lg,
     gap: SPACING.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   notificationItem: {
     flexDirection: 'row',

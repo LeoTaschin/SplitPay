@@ -18,7 +18,9 @@ import { SPACING, moderateScale } from '../utils/dimensions';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NewCharge({ route }) {
   const { colors, textStyles } = useTheme();
@@ -57,7 +59,8 @@ export default function NewCharge({ route }) {
 
       const numericAmount = parseFloat(amount.replace(/[^0-9,-]/g, '').replace(',', '.'));
 
-      await addDoc(collection(db, 'debts'), {
+      // Criar a dívida
+      const debtRef = await addDoc(collection(db, 'debts'), {
         amount: numericAmount,
         description: description.trim(),
         creditorId: debtor === 'me' ? selectedTarget.id : currentUser.uid,
@@ -66,6 +69,46 @@ export default function NewCharge({ route }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // Criar a notificação para o amigo em ambos os casos
+      const notificationRef = await addDoc(collection(db, 'notifications'), {
+        type: 'new_debt',
+        debtId: debtRef.id,
+        senderId: currentUser.uid,
+        receiverId: selectedTarget.id,
+        amount: numericAmount,
+        description: description.trim(),
+        createdAt: serverTimestamp(),
+        read: false,
+        message: debtor === 'me' 
+          ? `${currentUser.displayName || 'Alguém'} criou uma despesa que você vai pagar de R$ ${numericAmount.toFixed(2)}`
+          : `${currentUser.displayName || 'Alguém'} criou uma despesa com você de R$ ${numericAmount.toFixed(2)}`,
+      });
+
+      // Verificar se o amigo tem notificações push habilitadas
+      const receiverDoc = await getDoc(doc(db, 'users', selectedTarget.id));
+      if (receiverDoc.exists() && receiverDoc.data().pushToken) {
+        // Enviar notificação push para o amigo
+        const message = {
+          to: receiverDoc.data().pushToken,
+          sound: 'default',
+          title: 'Nova Despesa Registrada!',
+          body: debtor === 'me'
+            ? `${currentUser.displayName || 'Alguém'} criou uma despesa que você vai pagar de R$ ${numericAmount.toFixed(2)}`
+            : `${currentUser.displayName || 'Alguém'} criou uma despesa com você de R$ ${numericAmount.toFixed(2)}`,
+          data: { debtId: debtRef.id },
+        };
+
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-Encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        });
+      }
 
       setShowSuccess(true);
       Animated.spring(scaleAnim, {
