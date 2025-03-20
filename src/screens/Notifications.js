@@ -36,6 +36,15 @@ export function NotificationsScreen({ navigation }) {
     loadNotificationSettings();
   }, []);
 
+  const updateUserPushToken = async (token) => {
+    const user = auth.currentUser;
+    if (user) {
+      await updateDoc(doc(db, 'users', user.uid), {
+        pushToken: token,
+      });
+    }
+  };
+
   const loadNotificationSettings = async () => {
     try {
       setIsLoading(true);
