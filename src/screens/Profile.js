@@ -65,16 +65,6 @@ export function Profile({ onEditProfile }) {
       onPress: () => navigation.navigate('Settings'),
     },
     {
-      icon: 'notifications-outline',
-      title: 'Notificações',
-      onPress: () => navigation.navigate('NotificationsScreen'),
-    },
-    {
-      icon: 'shield-outline',
-      title: 'Privacidade',
-      onPress: () => navigation.navigate('Privacy'),
-    },
-    {
       icon: 'help-circle-outline',
       title: 'Ajuda',
       onPress: () => navigation.navigate('Help'),
@@ -107,7 +97,7 @@ export function Profile({ onEditProfile }) {
           onPress={() => navigation.navigate('Home')}
           style={styles.homeButton}
         >
-          <Ionicons name="home-outline" size={24} color={colors.primary} />
+          <Ionicons name="home-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 

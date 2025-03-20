@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export function Help({ navigation }) {
   const { colors, textStyles } = useTheme();
-  const supportEmail = 'suporte@splitpay.com';
+  const supportEmail = 'leoctaschin@gmail.com';
 
   const handleEmailSupport = () => {
     Linking.openURL(`mailto:${supportEmail}`);
