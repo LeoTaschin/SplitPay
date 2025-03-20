@@ -134,7 +134,7 @@ export default function AccountConfirmation({ navigation }) {
       <View style={styles.content}>
         <View style={styles.welcomeContainer}>
           <Text style={[textStyles.h3, { color: colors.text }]}>
-            Bem-vindo ao TaPago!
+            Bem-vindo ao SplitPay!
           </Text>
           <Text style={[textStyles.subText, { color: colors.text, textAlign: 'center', marginTop: SPACING.sm }]}>
             Divida contas e faça pagamentos com amigos de forma simples.
@@ -150,7 +150,7 @@ export default function AccountConfirmation({ navigation }) {
             Olá, {username || 'Usuário'}
           </Text>
           <Text style={[textStyles.bodySmall, { color: colors.primary, marginTop: SPACING.xs }]}>
-            Comece a usar o TaPago agora!
+            Comece a usar o SplitPay agora!
           </Text>
         </View>
 

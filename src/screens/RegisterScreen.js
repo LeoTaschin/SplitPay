@@ -317,15 +317,18 @@ export default function RegisterScreen() {
     },
     content: {
       flex: 1,
-      padding: 20,
+      padding: SPACING,
+      justifyContent: 'center',
     },
     logoContainer: {
-      alignItems: 'center',
-      minHeight: height * 0.15, // 15% da altura da tela
+      alignItems: 'flex-start',
+      marginBottom: height * 0.01,
+      minHeight: height * 0.15,
       justifyContent: 'center',
     },
     mainContent: {
       flex: 1,
+      justifyContent: 'flex-start',
     },
     formContainer: {
       width: '100%',

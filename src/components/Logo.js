@@ -1,50 +1,92 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { LogoSVG } from './LogoSVG';
 
 const LOGO_SIZE = 80;
 const FONT_SCALE = 0.35;
 
 export function Logo({ size = LOGO_SIZE }) {
   const { textStyles, colors } = useTheme();
-  const fontSize = Math.floor(size * FONT_SCALE); // Ensure integer font size
+  const fontSize = Math.floor(size * FONT_SCALE);
+  const iconSize = Math.floor(fontSize * 1.5);
   
   return (
     <View style={styles.container}>
-      <LogoSVG 
-        size={Math.floor(fontSize * 1.2)}
-        color={colors.primary}
-      />
-      <Text 
-        style={[
-          styles.text,
-          { 
-            fontSize, 
-            color: colors.text,
-            lineHeight: Math.floor(fontSize * 1.2),
-          }
-        ]}
-        numberOfLines={1}
-        allowFontScaling={false}
-      >
-        TaPago
-      </Text>
+      <View style={styles.textContainer}>
+        <View style={styles.iconContainer}>
+          <Image 
+            source={require('../assets/images/Logo SplitPay.png')}
+            style={{
+              width: iconSize,
+              height: iconSize,
+              resizeMode: 'contain'
+            }}
+          />
+        </View>
+        <View style={styles.textWrapper}>
+          <Text 
+            style={[
+              styles.text,
+              styles.splitText,
+              { 
+                fontSize, 
+                color: colors.primary,
+                lineHeight: Math.floor(fontSize * 1.2),
+              }
+            ]}
+            numberOfLines={1}
+            allowFontScaling={false}
+          >
+            Split
+          </Text>
+          <Text 
+            style={[
+              styles.text,
+              styles.payText,
+              { 
+                fontSize, 
+                color: colors.text,
+                lineHeight: Math.floor(fontSize * 1.2),
+              }
+            ]}
+            numberOfLines={1}
+            allowFontScaling={false}
+          >
+            Pay
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  textContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 0,
+  },
+  iconContainer: {
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  textWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   text: {
-    fontWeight: '300',
     includeFontPadding: false,
     textAlignVertical: 'center',
+  },
+  splitText: {
+    fontWeight: '700',
+  },
+  payText: {
+    fontWeight: '300',
   }
 });

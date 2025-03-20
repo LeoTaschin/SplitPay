@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoContainer: {
-    alignItems: 'center',
-    marginVertical: height * 0.05, // 5% da altura da tela
-    minHeight: height * 0.15, // 15% da altura da tela
+    alignItems: 'flex-start',
+    marginBottom: height * 0.01,
+    minHeight: height * 0.15,
     justifyContent: 'center',
   },
   mainContent: {
