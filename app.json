@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TaPago",
-    "slug": "TaPago",
+    "name": "SplitPay",
+    "slug": "SplitPay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,12 +14,21 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.leotaschin.TaPago",
+      "bundleIdentifier": "com.leotaschin.SplitPay",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para permitir que você escolha uma foto de perfil.",
         "NSCameraUsageDescription": "Precisamos acessar sua câmera para permitir que você tire uma foto de perfil.",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "aps": {
+          "alert": {
+            "badge": 1,
+            "sound": "default"
+          }
+        }
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -33,7 +42,7 @@
         "WRITE_EXTERNAL_STORAGE",
         "NOTIFICATIONS"
       ],
-      "package": "com.leotaschin.TaPago"
+      "package": "com.leotaschin.SplitPay"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,6 +64,13 @@
           "sounds": ["./assets/notification-sound.wav"]
         }
       ]
-    ]
+    ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#ffffff",
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "Nova notificação"
+    }
   }
 }

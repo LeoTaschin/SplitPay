@@ -1,6 +1,6 @@
-# TaPago
+# SplitPay
 
-TaPago é um aplicativo mobile desenvolvido em React Native para gerenciamento de despesas compartilhadas entre amigos e grupos.
+SplitPay é um aplicativo mobile desenvolvido em React Native para gerenciamento de despesas compartilhadas entre amigos e grupos.
 
 ## Funcionalidades
 
@@ -23,12 +23,12 @@ TaPago é um aplicativo mobile desenvolvido em React Native para gerenciamento d
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/LeoTaschin/TaPago.git
+git clone https://github.com/LeoTaschin/SplitPay.git
 ```
 
 2. Instale as dependências:
 ```bash
-cd TaPago
+cd SplitPay
 npm install
 ```
 
