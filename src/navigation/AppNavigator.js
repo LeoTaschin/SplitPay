@@ -28,6 +28,7 @@ import { NotificationsScreen } from '../screens/Notifications';
 import { Privacy } from '../screens/Privacy';
 import { Help } from '../screens/Help';
 import { About } from '../screens/About';
+import { FriendProfile } from '../screens/FriendProfile';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -198,6 +199,14 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="About" 
               component={About}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="FriendProfile" 
+              component={FriendProfile}
               options={{
                 animation: 'slide_from_right',
                 animationDuration: 300,

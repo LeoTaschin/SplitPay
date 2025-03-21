@@ -8,6 +8,7 @@ import {
   Animated,
   FlatList,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,8 +67,9 @@ const AnimatedValue = ({ value, style }) => {
   );
 };
 
-export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading }) {
+export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, onRefresh }) {
   const { colors, textStyles } = useTheme();
+  const [refreshing, setRefreshing] = useState(false);
   
   // Calcula os totais reais baseados nas dívidas individuais
   const calculatedTotalToReceive = debtsAsCreditor.reduce((sum, debt) => sum + (debt.amount || 0), 0);
@@ -207,18 +209,23 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading }
     });
 
     const otherUser = isReceive ? item.debtor : item.creditor;
+    const userProfilePic = otherUser?.photoURL || 'default_profile_pic_url';
 
     return (
       <View style={[styles.transactionCard, { backgroundColor: colors.cardBackground }]}>
         <View style={styles.transactionIconContainer}>
+          <Image 
+            source={{ uri: userProfilePic }} 
+            style={[styles.transactionProfilePic, { borderColor: colors.primary }]} 
+          />
           <View style={[
-            styles.transactionIcon,
-            { backgroundColor: isReceive ? colors.success + '15' : colors.error + '15' }
+            styles.transactionIndicator,
+            { backgroundColor: isReceive ? colors.success : colors.error }
           ]}>
             <Ionicons 
-              name={isReceive ? "arrow-down-circle" : "arrow-up-circle"} 
-              size={24} 
-              color={isReceive ? colors.success : colors.error} 
+              name={isReceive ? "arrow-down" : "arrow-up"} 
+              size={12} 
+              color={colors.background} 
             />
           </View>
         </View>
@@ -258,6 +265,15 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading }
         </View>
       </View>
     );
+  };
+
+  const onRefreshHandler = async () => {
+    try {
+      setRefreshing(true);
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -319,6 +335,15 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading }
             keyExtractor={(item, index) => `${item.id || index}-${item.date}`}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.transactionsList}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefreshHandler}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+                progressBackgroundColor={colors.cardBackground}
+              />
+            }
           />
         )}
       </View>
@@ -386,13 +411,26 @@ const styles = StyleSheet.create({
   },
   transactionIconContainer: {
     marginRight: SPACING.md,
-  },
-  transactionIcon: {
-    width: moderateScale(44),
-    height: moderateScale(44),
-    borderRadius: moderateScale(22),
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  transactionProfilePic: {
+    width: moderateScale(45),
+    height: moderateScale(45),
+    borderRadius: moderateScale(22.5),
+  },
+  transactionIndicator: {
+    position: 'absolute',
+    bottom: 8,
+    right: -2,
+    width: moderateScale(20),
+    height: moderateScale(20),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: moderateScale(2),
+    borderColor: 'white',
   },
   transactionInfo: {
     flex: 1,

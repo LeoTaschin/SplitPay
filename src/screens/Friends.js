@@ -332,15 +332,15 @@ export function Friends() {
       <>
         <TouchableOpacity
           style={[styles.friendItem, { backgroundColor: colors.cardBackground }]}
-          onPress={() => {
-            // Aqui você pode adicionar a lógica que desejar ao clicar em um amigo
-          }}
+          onPress={() => navigation.navigate('FriendProfile', { friend })}
         >
           <View style={styles.friendInfo}>
-            <Image
-              source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
-              style={styles.friendPhoto}
-            />
+            <View style={styles.photoContainer}>
+              <Image
+                source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                style={styles.friendPhoto}
+              />
+            </View>
             <View style={styles.friendTextContainer}>
               <View style={styles.nameContainer}>
                 <Text style={[textStyles.body, { color: colors.text }]}>
@@ -392,14 +392,6 @@ export function Friends() {
           <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
             {item.username}
           </Text>
-          {item.isVerified && (
-            <Ionicons 
-              name="checkmark-circle" 
-              size={16} 
-              color={colors.primary} 
-              style={styles.verifiedIcon}
-            />
-          )}
         </View>
         <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
           {item.email}
@@ -638,7 +630,6 @@ const styles = StyleSheet.create({
     width: moderateScale(50),
     height: moderateScale(50),
     borderRadius: moderateScale(25),
-    marginRight: SPACING.md,
   },
   friendInfo: {
     flexDirection: 'row',
@@ -799,7 +790,7 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.xs,
   },
   friendTextContainer: {
-    marginLeft: SPACING.sm,
+    marginLeft: SPACING.xs,
     flex: 1,
     justifyContent: 'center',
   },
@@ -842,5 +833,15 @@ const styles = StyleSheet.create({
   lastFriendItem: {
     borderBottomWidth: 1,
     borderBottomColor: 'gray',
+  },
+  photoContainer: {
+    position: 'relative',
+    marginRight: SPACING.md,
+  },
+
+  verifiedBadgeContainer: {
+    marginLeft: SPACING.xs,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(2),
   },
 }); 

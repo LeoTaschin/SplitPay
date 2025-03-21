@@ -4,6 +4,7 @@ import { Friends } from '../screens/Friends';
 import { Groups } from '../screens/Groups';
 import { Activity } from '../screens/Activity';
 import { useTheme } from '../context/ThemeContext';
+import { Profile } from '../screens/Profile';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +16,7 @@ export function MainTabs({
   loading, 
   error,
   userTotals,
+  onRefresh,
 }) {
   const { colors } = useTheme();
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -48,18 +50,31 @@ export function MainTabs({
   const renderContent = () => {
     switch (activeTab) {
       case 'friends':
-        return <Friends />;
+        return (
+          <Friends 
+            debtsAsCreditor={debtsAsCreditor}
+            debtsAsDebtor={debtsAsDebtor}
+            loading={loading}
+            error={error}
+            userTotals={userTotals}
+            onRefresh={onRefresh}
+          />
+        );
       case 'groups':
         return <Groups />;
       case 'activity':
         return (
           <Activity 
-            userTotals={userTotals}
             debtsAsCreditor={debtsAsCreditor}
             debtsAsDebtor={debtsAsDebtor}
             loading={loading}
+            error={error}
+            userTotals={userTotals}
+            onRefresh={onRefresh}
           />
         );
+      case 'profile':
+        return <Profile />;
       default:
         return <Friends />;
     }

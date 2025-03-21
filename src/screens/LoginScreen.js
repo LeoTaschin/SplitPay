@@ -64,10 +64,7 @@ export default function LoginScreen({ navigation }) {
       console.log('Credenciais salvas com sucesso');
       
       // Depois fazemos a navegação
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'AccountConfirmation' }],
-      });
+      navigation.replace('AccountConfirmation');
       
     } catch (error) {
       console.log('Erro completo:', error);

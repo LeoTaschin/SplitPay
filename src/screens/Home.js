@@ -108,6 +108,10 @@ export default function HomeScreen({ navigation }) {
       paddingTop: SPACING.md,
       borderTopWidth: 1,
     },
+    refreshButton: {
+      ...styles.refreshButton,
+      backgroundColor: colors.primary + '10'
+    }
   };
 
   // Atualiza quando a tela recebe foco
@@ -221,10 +225,7 @@ export default function HomeScreen({ navigation }) {
                 console.log('Home - handleSignOut - Logout realizado com sucesso');
                 
                 console.log('Home - handleSignOut - Redirecionando para Login');
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                });
+                navigation.replace('Login');
               } catch (error) {
                 console.error('Home - handleSignOut - Erro ao fazer logout:', error);
                 Alert.alert(
@@ -264,7 +265,7 @@ export default function HomeScreen({ navigation }) {
 
     return (
       <View style={styles.summaryContainer}>
-        <View style={[styles.balanceCard, { backgroundColor: colors.cardBackground }]}>
+        <View style={[dynamicStyles.balanceCard, { backgroundColor: colors.cardBackground }]}>
           <View style={styles.balanceHeader}>
             <View style={styles.balanceTitleContainer}>
               <Text style={[textStyles.caption, { color: colors.text, textTransform: 'uppercase' }]}>
@@ -277,6 +278,17 @@ export default function HomeScreen({ navigation }) {
                 style={styles.balanceIcon}
               />
             </View>
+            <TouchableOpacity 
+              onPress={fetchDebts}
+              disabled={loading || isRefreshing}
+              style={dynamicStyles.refreshButton}
+            >
+              {loading || isRefreshing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="refresh" size={16} color={colors.primary} />
+              )}
+            </TouchableOpacity>
           </View>
 
           {(loading || isRefreshing) ? (
@@ -384,6 +396,7 @@ const styles = StyleSheet.create({
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   balanceTitleContainer: {
     flexDirection: 'row',
@@ -414,5 +427,14 @@ const styles = StyleSheet.create({
     height: 2,
     marginHorizontal: SPACING.lg,
     opacity: 1,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  refreshButton: {
+    padding: SPACING.xs,
+    borderRadius: moderateScale(12),
   },
 }); 

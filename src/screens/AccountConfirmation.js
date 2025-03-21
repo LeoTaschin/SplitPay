@@ -131,34 +131,36 @@ export default function AccountConfirmation({ navigation }) {
         <Logo size={height * 0.1} />
       </View>
       
-      <View style={styles.content}>
-        <View style={styles.welcomeContainer}>
-          <Text style={[textStyles.h3, { color: colors.text }]}>
-            Bem-vindo ao SplitPay!
-          </Text>
-          <Text style={[textStyles.subText, { color: colors.text, textAlign: 'center', marginTop: SPACING.sm }]}>
-            Divida contas e faça pagamentos com amigos de forma simples.
-          </Text>
-        </View>
+      <View style={styles.mainContent}>
+        <View style={styles.content}>
+          <View style={styles.welcomeContainer}>
+            <Text style={[textStyles.h3, { color: colors.text }]}>
+              Bem-vindo ao SplitPay!
+            </Text>
+            <Text style={[textStyles.subText, { color: colors.text, textAlign: 'center', marginTop: SPACING.sm }]}>
+              Divida contas e faça pagamentos com amigos de forma simples.
+            </Text>
+          </View>
 
-        <View style={styles.profileContainer}>
-          <Image 
-            source={{ uri: userProfilePic }} 
-            style={[styles.profilePic, { borderColor: colors.primary }]} 
-          />
-          <Text style={[textStyles.body, { color: colors.text, marginTop: SPACING.sm }]}>
-            Olá, {username || 'Usuário'}
-          </Text>
-          <Text style={[textStyles.bodySmall, { color: colors.primary, marginTop: SPACING.xs }]}>
-            Comece a usar o SplitPay agora!
-          </Text>
-        </View>
+          <View style={styles.profileContainer}>
+            <Image 
+              source={{ uri: userProfilePic }} 
+              style={[styles.profilePic, { borderColor: colors.primary }]} 
+            />
+            <Text style={[textStyles.body, { color: colors.text, marginTop: SPACING.sm }]}>
+              Olá, {username || 'Usuário'}
+            </Text>
+            <Text style={[textStyles.bodySmall, { color: colors.primary, marginTop: SPACING.xs }]}>
+              Comece a usar o SplitPay agora!
+            </Text>
+          </View>
 
-        <View style={styles.buttonContainer}>
-          <Button 
-            title="Vamos começar!" 
-            onPress={handleStartApp}
-          />
+          <View style={styles.buttonContainer}>
+            <Button 
+              title="Vamos começar!" 
+              onPress={handleStartApp}
+            />
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -171,8 +173,13 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    minHeight: height * 0.15, // 15% da altura da tela
+    minHeight: height * 0.08,
     justifyContent: 'center',
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    marginTop: -SPACING.xxl * 3,
   },
   content: {
     flex: 1,
