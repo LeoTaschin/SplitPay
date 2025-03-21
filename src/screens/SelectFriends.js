@@ -111,9 +111,19 @@ export default function SelectFriends({ navigation, route }) {
             </View>
           )}
           <View style={styles.friendDetails}>
-            <Text style={[styles.friendName, { color: colors.text }]}>
-              {item.username}
-            </Text>
+            <View style={styles.nameContainer}>
+              <Text style={[textStyles.body, { color: colors.text }]}>
+                {item.username || item.email}
+              </Text>
+              {item.isVerified && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={16} 
+                  color={colors.primary} 
+                  style={styles.verifiedIcon}
+                />
+              )}
+            </View>
             <Text style={[styles.friendEmail, { color: colors.text2 }]}>
               {item.email}
             </Text>
@@ -281,5 +291,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedIcon: {
+    marginLeft: SPACING.xs,
   },
 }); 

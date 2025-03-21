@@ -1,26 +1,24 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Image,
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  FlatList, 
+  Image, 
   ActivityIndicator,
-  SafeAreaView,
+  SafeAreaView 
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
-import { SelectionToolbar } from '../components/SelectionToolbar';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { getUserFriends } from '../services/userService';
 import { useFocusEffect } from '@react-navigation/native';
 
-export default function SelectDebtTarget({ navigation }) {
+export default function SelectDebt({ navigation }) {
   const { colors, textStyles } = useTheme();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('friends');
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,29 +45,22 @@ export default function SelectDebtTarget({ navigation }) {
     }, [user?.uid])
   );
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
-
-  const navigateToNewCharge = (friend) => {
+  const handleSelectFriend = (friend) => {
     if (!friend?.id) return;
-
-    navigation.navigate('NewCharge', {
+    navigation.navigate('NewDebt', {
       selectedTarget: {
         id: friend.id,
         username: friend.username || '',
         email: friend.email || '',
-        photoURL: friend.photoURL || null,
-        isVerified: friend.isVerified || false
-      },
-      type: activeTab
+        photoURL: friend.photoURL || null
+      }
     });
   };
 
   const renderFriendItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.itemContainer, { backgroundColor: colors.cardBackground }]}
-      onPress={() => navigateToNewCharge(item)}
+      onPress={() => handleSelectFriend(item)}
     >
       <Image
         source={{ uri: item.photoURL || 'https://via.placeholder.com/40' }}
@@ -78,7 +69,7 @@ export default function SelectDebtTarget({ navigation }) {
       <View style={styles.itemInfo}>
         <View style={styles.nameContainer}>
           <Text style={[textStyles.body, { color: colors.text }]}>
-            {item.username}
+            {item.username || item.email}
           </Text>
           {item.isVerified && (
             <Ionicons 
@@ -136,7 +127,7 @@ export default function SelectDebtTarget({ navigation }) {
       );
     }
 
-    if (activeTab === 'friends' && friends.length === 0) {
+    if (friends.length === 0) {
       return (
         <View style={styles.centerContainer}>
           <Text style={[textStyles.body, { color: colors.textSecondary }]}>
@@ -150,16 +141,6 @@ export default function SelectDebtTarget({ navigation }) {
               Adicionar Amigos
             </Text>
           </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (activeTab === 'groups') {
-      return (
-        <View style={styles.centerContainer}>
-          <Text style={[textStyles.body, { color: colors.text2 }]}>
-            Em breve você poderá dividir despesas em grupo!
-          </Text>
         </View>
       );
     }
@@ -186,15 +167,10 @@ export default function SelectDebtTarget({ navigation }) {
           />
         </TouchableOpacity>
         <Text style={[textStyles.h2, { color: colors.text }]}>
-          Nova Cobrança
+          Nova Dívida
         </Text>
         <View style={styles.placeholder} />
       </View>
-
-      <SelectionToolbar 
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
 
       {renderContent()}
     </SafeAreaView>

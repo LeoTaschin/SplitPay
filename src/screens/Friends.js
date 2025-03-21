@@ -21,7 +21,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { db, auth } from '../config/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { useDebts } from '../hooks/useDebts';
 import { formatCurrency } from '../utils/formatters';
@@ -46,6 +46,21 @@ export function Friends() {
   useEffect(() => {
     initializeUserData();
     fetchFriends();
+
+    // Adiciona um listener para atualizações em tempo real
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
+        if (doc.exists()) {
+          const userData = doc.data();
+          if (userData.friends) {
+            fetchFriends();
+          }
+        }
+      });
+
+      return () => unsubscribe();
+    }
   }, []);
 
   const calculateBalanceWithFriend = (friendId) => {
@@ -126,9 +141,13 @@ export function Friends() {
       for (const friendId of userData.friends) {
         const friendDoc = await getDoc(doc(db, 'users', friendId));
         if (friendDoc.exists()) {
+          const friendData = friendDoc.data();
           friendsData.push({
             id: friendDoc.id,
-            ...friendDoc.data()
+            ...friendData,
+            photoURL: friendData.photoURL || null,
+            username: friendData.username || friendData.email?.split('@')[0] || 'Usuário',
+            email: friendData.email || ''
           });
         }
       }
@@ -323,9 +342,19 @@ export function Friends() {
               style={styles.friendPhoto}
             />
             <View style={styles.friendTextContainer}>
-              <Text style={[textStyles.body, { color: colors.text }]}>
-                {friend.username}
-              </Text>
+              <View style={styles.nameContainer}>
+                <Text style={[textStyles.body, { color: colors.text }]}>
+                  {friend.username || friend.email}
+                </Text>
+                {friend.isVerified && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={16} 
+                    color={colors.primary} 
+                    style={styles.verifiedIcon}
+                  />
+                )}
+              </View>
               <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
                 {friend.email}
               </Text>
@@ -359,9 +388,19 @@ export function Friends() {
         defaultSource={require('../assets/images/logoPequena.png')}
       />
       <View style={styles.searchResultInfo}>
-        <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
-          {item.username}
-        </Text>
+        <View style={styles.nameContainer}>
+          <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
+            {item.username}
+          </Text>
+          {item.isVerified && (
+            <Ionicons 
+              name="checkmark-circle" 
+              size={16} 
+              color={colors.primary} 
+              style={styles.verifiedIcon}
+            />
+          )}
+        </View>
         <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
           {item.email}
         </Text>
@@ -763,5 +802,12 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
     flex: 1,
     justifyContent: 'center',
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedIcon: {
+    marginLeft: SPACING.xs,
   },
 }); 

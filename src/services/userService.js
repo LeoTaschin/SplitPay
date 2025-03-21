@@ -115,7 +115,8 @@ export const getUserFriends = async (userId) => {
         id: data.uid,
         username: data.username || 'Sem nome',
         email: data.email || 'Sem email',
-        photoURL: data.photoURL || null
+        photoURL: data.photoURL || null,
+        isVerified: data.isVerified || false
       };
     });
 

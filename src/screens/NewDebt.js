@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Image
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
@@ -16,37 +17,40 @@ import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useDebts } from '../hooks/useDebts';
+import { createDebt } from '../services/debtService';
 
-export function NewDebt({ navigation }) {
+export function NewDebt({ route, navigation }) {
   const { colors, textStyles } = useTheme();
   const { refreshDebts } = useDebts();
+  const { selectedTarget } = route.params || {};
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [debtor, setDebtor] = useState('other');
 
   const handleSubmit = async () => {
     if (!amount || !description) {
+      alert('Por favor, preencha todos os campos');
       return;
     }
 
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
+      const result = await createDebt(
+        debtor === 'me' ? selectedTarget.id : selectedTarget.id,
+        debtor === 'me' ? selectedTarget.id : selectedTarget.id,
+        amount,
+        description
+      );
 
-      await addDoc(collection(db, 'debts'), {
-        amount: parseFloat(amount),
-        description,
-        creditorId: currentUser.uid,
-        paid: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      await refreshDebts();
-      navigation.goBack();
+      if (result.success) {
+        await refreshDebts();
+        navigation.goBack();
+      } else {
+        alert('Erro ao criar dívida: ' + result.error);
+      }
     } catch (error) {
-      console.error('Erro ao criar dívida:', error);
+      alert('Erro ao criar dívida: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -105,6 +109,53 @@ export function NewDebt({ navigation }) {
                 placeholder="Digite uma descrição"
                 placeholderTextColor={colors.text2}
               />
+            </View>
+
+            <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground }]}>
+              <Text style={[textStyles.caption, { color: colors.text2, marginBottom: SPACING.xs }]}>
+                Quem vai pagar?
+              </Text>
+              <View style={styles.debtorSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.debtorOption,
+                    { 
+                      backgroundColor: debtor === 'me' ? colors.primary : colors.card,
+                      borderColor: debtor === 'me' ? colors.primary : colors.border,
+                    }
+                  ]}
+                  onPress={() => setDebtor('me')}
+                >
+                  <View style={styles.debtorOptionContent}>
+                    <Text style={[
+                      textStyles.bodyLarge,
+                      { color: debtor === 'me' ? colors.white : colors.text }
+                    ]}>
+                      Eu vou pagar
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.debtorOption,
+                    { 
+                      backgroundColor: debtor === 'other' ? colors.primary : colors.card,
+                      borderColor: debtor === 'other' ? colors.primary : colors.border,
+                    }
+                  ]}
+                  onPress={() => setDebtor('other')}
+                >
+                  <View style={styles.debtorOptionContent}>
+                    <Text style={[
+                      textStyles.bodyLarge,
+                      { color: debtor === 'other' ? colors.white : colors.text }
+                    ]}>
+                      {selectedTarget?.username || 'Outro'} vai pagar
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -183,5 +234,19 @@ const styles = StyleSheet.create({
   },
   submitButtonDisabled: {
     opacity: 0.7,
+  },
+  debtorOption: {
+    padding: SPACING.md,
+    borderWidth: 2,
+    borderRadius: moderateScale(10),
+    marginBottom: SPACING.md,
+  },
+  debtorOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  debtorSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 }); 

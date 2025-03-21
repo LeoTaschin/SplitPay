@@ -1,30 +1,59 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
-import { Logo } from '../components/Logo';
 import { useTheme } from '../context/ThemeContext';
+import { Logo } from '../components/Logo';
+import { useAuth } from '../hooks/useAuth';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function SplashScreen({ navigation }) {
   const { colors } = useTheme();
-  const fadeAnim = new Animated.Value(0);
+  const { user, loading: authLoading } = useAuth();
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.delay(1500),
-    ]).start(() => {
-      navigation.replace('Login');
-    });
-  }, []);
+    // Anima o logo com fade-in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    // Sequência de animação e navegação
+    const timer = setTimeout(() => {
+      // Se estiver carregando a autenticação, espera
+      if (authLoading) {
+        return;
+      }
+
+      // Se o usuário estiver autenticado, vai para Home
+      if (user) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      } else {
+        // Se não estiver autenticado, vai para Login
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      }
+    }, 2000); // 2 segundos de animação
+
+    return () => clearTimeout(timer);
+  }, [user, authLoading]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+      <Animated.View
+        style={[
+          styles.logoContainer,
+          {
+            opacity: fadeAnim,
+          },
+        ]}
+      >
         <Logo size={height * 0.15} />
       </Animated.View>
     </View>
@@ -37,7 +66,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
+  logoContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
 }); 

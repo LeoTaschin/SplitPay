@@ -175,9 +175,19 @@ export default function NewCharge({ route }) {
                 style={styles.confirmationAvatar}
               />
               <View style={styles.confirmationInfo}>
-                <Text style={[textStyles.h2, { color: colors.text }]}>
-                  {selectedTarget?.username}
-                </Text>
+                <View style={styles.nameContainer}>
+                  <Text style={[textStyles.h2, { color: colors.text }]}>
+                    {selectedTarget?.username}
+                  </Text>
+                  {selectedTarget?.isVerified && (
+                    <Ionicons 
+                      name="checkmark-circle" 
+                      size={16} 
+                      color={colors.primary} 
+                      style={styles.verifiedIcon}
+                    />
+                  )}
+                </View>
                 <Text style={[textStyles.h4, { color: colors.text2 }]}>
                   {selectedTarget?.email}
                 </Text>
@@ -255,9 +265,19 @@ export default function NewCharge({ route }) {
               style={styles.avatar}
             />
             <View style={styles.targetTextContainer}>
-              <Text style={[textStyles.h2, { color: colors.text, marginBottom: SPACING.xs }]}>
-                {selectedTarget?.username || 'Usuário não selecionado'}
-              </Text>
+              <View style={styles.nameContainer}>
+                <Text style={[textStyles.h2, { color: colors.text, marginBottom: SPACING.xs }]}>
+                  {selectedTarget?.username || 'Usuário não selecionado'}
+                </Text>
+                {selectedTarget?.isVerified && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={16} 
+                    color={colors.primary} 
+                    style={styles.verifiedIcon}
+                  />
+                )}
+              </View>
               <Text style={[textStyles.h4, { color: colors.text2 }]}>
                 {selectedTarget?.email}
               </Text>
@@ -604,5 +624,14 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
       },
     }),
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'left',
+  },
+  verifiedIcon: {
+    marginLeft: SPACING.xs,
+    alignSelf: 'center',
   },
 }); 

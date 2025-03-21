@@ -27,6 +27,7 @@ export function Profile({ onEditProfile }) {
   const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [joinDate, setJoinDate] = useState(null);
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -36,6 +37,7 @@ export function Profile({ onEditProfile }) {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setUsername(userData.username);
+            setIsVerified(userData.isVerified || false);
             if (userData.createdAt) {
               setJoinDate(userData.createdAt.toDate());
             }
@@ -113,12 +115,22 @@ export function Profile({ onEditProfile }) {
             />
           </View>
           <View style={styles.userInfo}>
-            <Text style={[textStyles.h3, { 
-              color: colors.text,
-              marginBottom: SPACING.xs 
-            }]}>
-              {username || 'Usuário'}
-            </Text>
+            <View style={styles.nameContainer}>
+              <Text style={[textStyles.h3, { 
+                color: colors.text,
+                marginBottom: SPACING.xs 
+              }]}>
+                {username || 'Usuário'}
+              </Text>
+              {isVerified && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={20} 
+                  color={colors.primary} 
+                  style={styles.verifiedIcon}
+                />
+              )}
+            </View>
             <Text style={[textStyles.body, { 
               color: colors.text2,
               marginBottom: SPACING.xs
@@ -226,5 +238,12 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     padding: SPACING.xs,
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedIcon: {
+    marginLeft: SPACING.xs,
   },
 }); 

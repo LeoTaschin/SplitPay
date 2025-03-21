@@ -133,6 +133,12 @@ export function EditProfile({ navigation }) {
 
         await updateProfile(currentUser, { photoURL: downloadURL });
         
+        // Atualiza a foto no Firestore
+        await updateDoc(doc(db, 'users', user.uid), {
+          photoURL: downloadURL,
+          updatedAt: new Date()
+        });
+        
         Alert.alert('Sucesso', 'Foto de perfil atualizada com sucesso!');
       }
     } catch (error) {
@@ -179,18 +185,28 @@ export function EditProfile({ navigation }) {
           <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.xs }]}>
             Nome de usuário
           </Text>
-          <TextInput
-            style={[styles.input, { 
-              color: colors.text,
-              borderColor: colors.border,
-              backgroundColor: colors.card
-            }]}
-            value={username}
-            onChangeText={setUsername}
-            placeholder="Digite seu nome de usuário"
-            placeholderTextColor={colors.text2}
-            autoCapitalize="none"
-          />
+          <View style={styles.nameContainer}>
+            <TextInput
+              style={[styles.input, { 
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.card
+              }]}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Digite seu nome de usuário"
+              placeholderTextColor={colors.text2}
+              autoCapitalize="none"
+            />
+            {user?.isVerified && (
+              <Ionicons 
+                name="checkmark-circle" 
+                size={20} 
+                color={colors.primary} 
+                style={styles.verifiedIcon}
+              />
+            )}
+          </View>
           <TouchableOpacity
             onPress={handleUpdateUsername}
             style={[styles.updateButton, { backgroundColor: colors.primary }]}
@@ -250,13 +266,22 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     marginTop: SPACING.xl,
   },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
   input: {
+    flex: 1,
     height: moderateScale(48),
     borderWidth: 1,
-    borderRadius: moderateScale(8),
+    borderRadius: moderateScale(10),
     paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
     fontSize: moderateScale(16),
+    marginRight: SPACING.sm,
+  },
+  verifiedIcon: {
+    marginLeft: SPACING.xs,
   },
   updateButton: {
     padding: SPACING.md,
