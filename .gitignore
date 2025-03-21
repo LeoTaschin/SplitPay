@@ -69,5 +69,5 @@ web-build/
 .env.production.local
 
 # typescript
-*.tsbuildinfo 
+*.tsbuildinfo
 node_modules

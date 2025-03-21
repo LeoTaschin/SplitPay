@@ -810,4 +810,37 @@ const styles = StyleSheet.create({
   verifiedIcon: {
     marginLeft: SPACING.xs,
   },
+  friendAvatar: {
+    width: moderateScale(50),
+    height: moderateScale(50),
+    borderRadius: moderateScale(25),
+    marginRight: SPACING.md,
+  },
+  friendName: {
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  friendEmail: {
+    fontSize: moderateScale(14),
+    color: 'gray',
+  },
+  balanceText: {
+    fontSize: moderateScale(14),
+    fontWeight: 'bold',
+  },
+  positiveBalance: {
+    color: 'green',
+  },
+  negativeBalance: {
+    color: 'red',
+  },
+  firstFriendItem: {
+    borderTopWidth: 1,
+    borderTopColor: 'gray',
+  },
+  lastFriendItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'gray',
+  },
 }); 
