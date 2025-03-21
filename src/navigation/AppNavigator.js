@@ -70,12 +70,16 @@ function TabNavigator() {
 }
 
 export default function AppNavigator() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null; // ou um componente de loading
+  }
 
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Splash"
+        initialRouteName={user ? "AccountConfirmation" : "Splash"}
         screenOptions={{
           headerShown: false,
           animation: 'fade',
@@ -85,113 +89,122 @@ export default function AppNavigator() {
           },
         }}
       >
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="AccountConfirmation" component={AccountConfirmation} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen 
-          name="Groups" 
-          component={Groups}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="SelectDebtTarget" 
-          component={SelectDebtTarget}
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="NewCharge" 
-          component={NewCharge}
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="SelectFriends" 
-          component={SelectFriends}
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen name="MainTabs" component={TabNavigator} />
-        <Stack.Screen 
-          name="NewDebt" 
-          component={NewDebt}
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="Profile" 
-          component={Profile}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="EditProfile" 
-          component={EditProfile}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="Settings" 
-          component={Settings}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="NotificationsScreen" 
-          component={NotificationsScreen}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="Privacy" 
-          component={Privacy}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="Help" 
-          component={Help}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
-        <Stack.Screen 
-          name="About" 
-          component={About}
-          options={{
-            animation: 'slide_from_right',
-            animationDuration: 300,
-          }}
-        />
+        {!user ? (
+          // Rotas públicas
+          <>
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </>
+        ) : (
+          // Rotas privadas
+          <>
+            <Stack.Screen name="AccountConfirmation" component={AccountConfirmation} />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen 
+              name="Groups" 
+              component={Groups}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="SelectDebtTarget" 
+              component={SelectDebtTarget}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="NewCharge" 
+              component={NewCharge}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="SelectFriends" 
+              component={SelectFriends}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen name="MainTabs" component={TabNavigator} />
+            <Stack.Screen 
+              name="NewDebt" 
+              component={NewDebt}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="Profile" 
+              component={Profile}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="EditProfile" 
+              component={EditProfile}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="Settings" 
+              component={Settings}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="NotificationsScreen" 
+              component={NotificationsScreen}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="Privacy" 
+              component={Privacy}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="Help" 
+              component={Help}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="About" 
+              component={About}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

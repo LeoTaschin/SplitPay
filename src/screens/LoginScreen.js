@@ -66,7 +66,7 @@ export default function LoginScreen({ navigation }) {
       // Depois fazemos a navegação
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Home' }],
+        routes: [{ name: 'AccountConfirmation' }],
       });
       
     } catch (error) {
