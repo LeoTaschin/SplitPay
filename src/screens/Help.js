@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 export function Help({ navigation }) {
   const { colors, textStyles } = useTheme();
   const supportEmail = 'leoctaschin@gmail.com';
+  const lastUpdate = new Date().toLocaleString();
 
   const handleEmailSupport = () => {
     Linking.openURL(`mailto:${supportEmail}`);
@@ -63,6 +64,7 @@ export function Help({ navigation }) {
               <View style={styles.contactText}>
                 <Text style={[textStyles.body, { color: colors.text }]}>Email de suporte</Text>
                 <Text style={[textStyles.caption, { color: colors.text2 }]}>{supportEmail}</Text>
+                <Text style={[textStyles.caption, { color: colors.text2, marginTop: 4 }]}>Última atualização: {lastUpdate}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text2} />
