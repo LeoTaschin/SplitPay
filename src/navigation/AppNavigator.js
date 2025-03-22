@@ -15,8 +15,6 @@ import AccountConfirmation from '../screens/AccountConfirmation';
 import HomeScreen from '../screens/Home';
 import { Friends } from '../screens/Friends';
 import { Groups } from '../screens/Groups';
-import NewCharge from '../screens/NewCharge';
-import SelectFriends from '../screens/SelectFriends';
 import SelectDebtTarget from '../screens/SelectDebtTarget';
 import Home from '../screens/Home';
 import { Profile } from '../screens/Profile';
@@ -114,24 +112,6 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="SelectDebtTarget" 
               component={SelectDebtTarget}
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-                animationDuration: 300,
-              }}
-            />
-            <Stack.Screen 
-              name="NewCharge" 
-              component={NewCharge}
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-                animationDuration: 300,
-              }}
-            />
-            <Stack.Screen 
-              name="SelectFriends" 
-              component={SelectFriends}
               options={{
                 presentation: 'modal',
                 animation: 'slide_from_bottom',

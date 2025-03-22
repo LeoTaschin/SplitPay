@@ -51,10 +51,9 @@ export default function SelectDebtTarget({ navigation }) {
     setActiveTab(tab);
   };
 
-  const navigateToNewCharge = (friend) => {
+  const handleSelectFriend = (friend) => {
     if (!friend?.id) return;
-
-    navigation.navigate('NewCharge', {
+    navigation.navigate('NewDebt', {
       selectedTarget: {
         id: friend.id,
         username: friend.username || '',
@@ -69,7 +68,7 @@ export default function SelectDebtTarget({ navigation }) {
   const renderFriendItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.itemContainer, { backgroundColor: colors.cardBackground }]}
-      onPress={() => navigateToNewCharge(item)}
+      onPress={() => handleSelectFriend(item)}
     >
       <Image
         source={{ uri: item.photoURL || 'https://via.placeholder.com/40' }}

@@ -422,14 +422,14 @@ const styles = StyleSheet.create({
   },
   transactionIndicator: {
     position: 'absolute',
-    bottom: 8,
+    bottom: 10,
     right: -2,
     width: moderateScale(20),
     height: moderateScale(20),
     borderRadius: moderateScale(10),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: moderateScale(2),
+    borderWidth: moderateScale(1),
     borderColor: 'white',
   },
   transactionInfo: {

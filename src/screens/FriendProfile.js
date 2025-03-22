@@ -9,18 +9,20 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useDebts } from '../hooks/useDebts';
 import { formatCurrency } from '../utils/formatters';
 import { LinearGradient } from 'expo-linear-gradient';
+import { removeFriend } from '../services/userService';
 
 const { width } = Dimensions.get('window');
 
@@ -64,22 +66,79 @@ export function FriendProfile({ route }) {
   const isPositive = balance > 0;
   const isNegative = balance < 0;
 
+  const handleRemoveFriend = async () => {
+    try {
+      const result = await removeFriend(auth.currentUser.uid, friend.id);
+      
+      if (!result.success) {
+        if (result.error === 'PENDING_DEBTS') {
+          Alert.alert(
+            'Dívidas Pendentes',
+            `Existem dívidas pendentes com ${friend.username}:\n\n` +
+            (result.totalToReceive > 0 ? `${friend.username} te deve ${formatCurrency(result.totalToReceive.toString())}\n` : '') +
+            (result.totalToPay > 0 ? `Você deve ${formatCurrency(result.totalToPay.toString())} para ${friend.username}\n` : '') +
+            '\nVocê precisa caducar ou resolver todas as dívidas antes de remover o amigo.',
+            [
+              {
+                text: 'OK',
+                style: 'cancel'
+              }
+            ]
+          );
+          return;
+        }
+        
+        Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
+        return;
+      }
+
+      navigation.navigate('Home');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
+    }
+  };
+
   const menuItems = [
     {
-      icon: 'cash-outline',
-      title: 'Criar Nova Dívida',
-      onPress: () => navigation.navigate('NewDebt', { selectedFriend: friend }),
+      icon: 'trash-outline',
+      title: 'Remover Amigo',
+      onPress: () => {
+        Alert.alert(
+          'Remover Amigo',
+          `Tem certeza que deseja remover ${friend.username} da sua lista de amigos?`,
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel'
+            },
+            {
+              text: 'Remover',
+              style: 'destructive',
+              onPress: handleRemoveFriend
+            }
+          ]
+        );
+      },
     },
     {
       icon: 'time-outline',
-      title: 'Histórico de Transações',
-      onPress: () => navigation.navigate('Activity', { friendId: friend.id }),
-    },
-    {
-      icon: 'chatbubble-outline',
-      title: 'Enviar Mensagem',
+      title: 'Caducar Dívida',
       onPress: () => {
-        // Implementar chat
+        if (balance !== 0) {
+          navigation.navigate('NewDebt', { 
+            friend: {
+              id: friend.id,
+              username: friend.username,
+              photoURL: friend.photoURL,
+              isVerified: friendData?.isVerified
+            },
+            prefillAmount: Math.abs(balance).toString(),
+            prefillDescription: 'Dívida caducada',
+            forceDebtor: balance < 0 ? 'me' : 'other'
+          });
+        } else {
+          alert('Não há dívidas para caducar');
+        }
       },
     },
   ];

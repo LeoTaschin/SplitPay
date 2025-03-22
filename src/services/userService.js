@@ -126,4 +126,66 @@ export const getUserFriends = async (userId) => {
     console.error('userService - getUserFriends - Erro:', error);
     throw error;
   }
+};
+
+// Remover amigo
+export const removeFriend = async (currentUserId, friendId) => {
+  try {
+    // Verificar se existem dívidas pendentes
+    const debtsAsCreditorQuery = query(
+      collection(db, 'debts'),
+      where('creditorId', '==', currentUserId),
+      where('debtorId', '==', friendId),
+      where('paid', '==', false)
+    );
+
+    const debtsAsDebtorQuery = query(
+      collection(db, 'debts'),
+      where('creditorId', '==', friendId),
+      where('debtorId', '==', currentUserId),
+      where('paid', '==', false)
+    );
+
+    const [creditorDebts, debtorDebts] = await Promise.all([
+      getDocs(debtsAsCreditorQuery),
+      getDocs(debtsAsDebtorQuery)
+    ]);
+
+    const totalToReceive = creditorDebts.docs.reduce(
+      (total, doc) => total + doc.data().amount,
+      0
+    );
+
+    const totalToPay = debtorDebts.docs.reduce(
+      (total, doc) => total + doc.data().amount,
+      0
+    );
+
+    // Se existem dívidas pendentes, retorna erro
+    if (totalToReceive > 0 || totalToPay > 0) {
+      return {
+        success: false,
+        error: 'PENDING_DEBTS',
+        totalToReceive,
+        totalToPay
+      };
+    }
+
+    // Remove friend from current user's friends list
+    const userRef = doc(db, 'users', currentUserId);
+    const userDoc = await getDoc(userRef);
+    const updatedFriends = userDoc.data().friends.filter(id => id !== friendId);
+    await updateDoc(userRef, { friends: updatedFriends });
+
+    // Remove current user from friend's friends list
+    const friendRef = doc(db, 'users', friendId);
+    const friendDoc = await getDoc(friendRef);
+    const updatedFriendFriends = friendDoc.data().friends.filter(id => id !== currentUserId);
+    await updateDoc(friendRef, { friends: updatedFriendFriends });
+
+    return { success: true };
+  } catch (error) {
+    console.error('userService - removeFriend - Erro:', error);
+    return { success: false, error: error.message };
+  }
 }; 
