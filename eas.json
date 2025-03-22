@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.9.1"
+    "version": ">= 3.13.3",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -22,7 +23,6 @@
     },
     "production": {
       "ios": {
-        "credentialsSource": "remote",
         "resourceClass": "m-medium"
       },
       "channel": "production"
@@ -31,9 +31,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "leonardotaschin@gmail.com",
-        "ascAppId": "6471234567",
-        "appleTeamId": "AB32CZE81F"
+        "appleId": "ltaschin21@gmail.com",
+        "ascAppId": "6743552828"
       }
     }
   }
