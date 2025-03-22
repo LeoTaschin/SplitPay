@@ -63,8 +63,8 @@ export default function NewCharge({ route }) {
       const debtRef = await addDoc(collection(db, 'debts'), {
         amount: numericAmount,
         description: description.trim(),
-        creditorId: debtor === 'me' ? selectedTarget.id : currentUser.uid,
-        debtorId: debtor === 'me' ? currentUser.uid : selectedTarget.id,
+        creditorId: debtor === 'me' ? currentUser.uid : selectedTarget.id,
+        debtorId: debtor === 'me' ? selectedTarget.id : currentUser.uid,
         paid: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -81,8 +81,8 @@ export default function NewCharge({ route }) {
         createdAt: serverTimestamp(),
         read: false,
         message: debtor === 'me' 
-          ? `${currentUser.displayName || 'Alguém'} criou uma despesa que você vai pagar de R$ ${numericAmount.toFixed(2)}`
-          : `${currentUser.displayName || 'Alguém'} criou uma despesa com você de R$ ${numericAmount.toFixed(2)}`,
+          ? `${currentUser.displayName || 'Alguém'} registrou que vai pagar R$ ${numericAmount.toFixed(2)}`
+          : `${currentUser.displayName || 'Alguém'} registrou que você vai pagar R$ ${numericAmount.toFixed(2)}`,
       });
 
       // Verificar se o amigo tem notificações push habilitadas
@@ -94,8 +94,8 @@ export default function NewCharge({ route }) {
           sound: 'default',
           title: 'Nova Despesa Registrada!',
           body: debtor === 'me'
-            ? `${currentUser.displayName || 'Alguém'} criou uma despesa que você vai pagar de R$ ${numericAmount.toFixed(2)}`
-            : `${currentUser.displayName || 'Alguém'} criou uma despesa com você de R$ ${numericAmount.toFixed(2)}`,
+            ? `${currentUser.displayName || 'Alguém'} registrou que vai pagar R$ ${numericAmount.toFixed(2)}`
+            : `${currentUser.displayName || 'Alguém'} registrou que você vai pagar R$ ${numericAmount.toFixed(2)}`,
           data: { debtId: debtRef.id },
         };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,6 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  Animated,
-  Easing,
   Dimensions,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -23,36 +21,8 @@ import { ptBR } from 'date-fns/locale';
 import { useDebts } from '../hooks/useDebts';
 import { formatCurrency } from '../utils/formatters';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
 
-const { width, height } = Dimensions.get('window');
-
-const WaveBackground = ({ colors }) => {
-  return (
-    <View style={styles.waveContainer}>
-      <Svg
-        height="100%"
-        width="100%"
-        viewBox={`0 0 ${width} ${height * 0.3}`}
-        preserveAspectRatio="none"
-        style={styles.waveSvg}
-      >
-        <Path
-          fill={colors.primary + '30'}
-          d={`M0,${height * 0.2}C${width * 0.25},${height * 0.15},${width * 0.75},${height * 0.25},${width},${height * 0.2}V0H0Z`}
-        />
-        <Path
-          fill={colors.primary + '50'}
-          d={`M0,${height * 0.15}C${width * 0.25},${height * 0.2},${width * 0.75},${height * 0.1},${width},${height * 0.15}V0H0Z`}
-        />
-        <Path
-          fill={colors.primary + '80'}
-          d={`M0,${height * 0.1}C${width * 0.25},${height * 0.05},${width * 0.75},${height * 0.15},${width},${height * 0.1}V0H0Z`}
-        />
-      </Svg>
-    </View>
-  );
-};
+const { width } = Dimensions.get('window');
 
 export function FriendProfile({ route }) {
   const { colors, textStyles } = useTheme();
@@ -60,7 +30,6 @@ export function FriendProfile({ route }) {
   const { friend } = route.params;
   const [friendData, setFriendData] = useState(null);
   const { debtsAsCreditor, debtsAsDebtor } = useDebts();
-  const waveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchFriendData = async () => {
@@ -78,45 +47,6 @@ export function FriendProfile({ route }) {
       fetchFriendData();
     }
   }, [friend]);
-
-  useEffect(() => {
-    const startWaveAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(waveAnim, {
-            toValue: 1,
-            duration: 2000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-
-    startWaveAnimation();
-  }, []);
-
-  const waveStyle = {
-    position: 'absolute',
-    width: moderateScale(120),
-    height: moderateScale(120),
-    borderRadius: moderateScale(60),
-    borderWidth: moderateScale(2),
-    borderColor: colors.primary + '50',
-    backgroundColor: colors.primary + '10',
-    transform: [
-      {
-        scale: waveAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.8, 1.4],
-        }),
-      },
-    ],
-    opacity: waveAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.5, 0],
-    }),
-  };
 
   const calculateBalance = () => {
     const debtsAsCreditorToFriend = debtsAsCreditor
@@ -157,94 +87,89 @@ export function FriendProfile({ route }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} />
-      <WaveBackground colors={colors} />
       <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={[colors.primary + '30', colors.background]}
+          style={styles.headerGradient}
+        />
+        
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.backButton, { backgroundColor: colors.background + '80' }]}
+          style={[styles.backButton, { backgroundColor: colors.surface }]}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ScrollView style={styles.content}>
-          <View style={styles.headerContent}>
-            <View style={styles.photoContainer}>
-              <Animated.View style={[styles.waveContainer, waveStyle]} />
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <View style={styles.profileSection}>
               <Image
                 source={{ uri: friend.photoURL || 'https://via.placeholder.com/150' }}
-                style={[styles.photo, { 
-                  borderColor: colors.primary,
-                  backgroundColor: colors.surface,
-                  zIndex: 1,
-                }]}
+                style={[styles.profileImage, { borderColor: colors.primary }]}
               />
-            </View>
-          </View>
-
-          <View style={styles.userInfo}>
-            <View style={styles.nameContainer}>
-              <Text style={[textStyles.h3, { color: colors.text }]}>
-                {friend.username || 'Usuário'}
-              </Text>
-              {friendData?.isVerified && (
-                <View style={styles.verifiedBadgeContainer}>
-                  <Ionicons 
-                    name="checkmark-circle" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.verifiedIcon}
-                  />
-                </View>
-              )}
-            </View>
-            <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.xs }]}>
-              {friend.email}
-            </Text>
-            {friendData?.createdAt && (
-              <Text style={[textStyles.bodySmall, { color: colors.text2, textAlign: 'center', marginTop: SPACING.xs }]}>
-                Membro desde {format(friendData.createdAt.toDate(), "dd/MM/yyyy", { locale: ptBR })}
-              </Text>
-            )}
-          </View>
-
-          <View style={[styles.balanceCard, { backgroundColor: colors.cardBackground }]}>
-            <Text style={[textStyles.body, { color: colors.text2 }]}>Saldo com {friend.username}</Text>
-            <Text style={[
-              textStyles.h2,
-              {
-                color: isPositive ? colors.success : isNegative ? colors.error : colors.text,
-              }
-            ]}>
-              {isPositive ? '+' : ''}{formatCurrency(balance.toString())}
-            </Text>
-          </View>
-
-          <View style={styles.menuContainer}>
-            {menuItems.map((item, index) => (
-              <React.Fragment key={index}>
-                <TouchableOpacity
-                  style={[styles.menuItem]}
-                  onPress={item.onPress}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <Ionicons
-                      name={item.icon}
-                      size={24}
-                      color={colors.primary}
+              
+              <View style={styles.nameSection}>
+                <View style={styles.nameContainer}>
+                  <Text style={[textStyles.h2, { color: colors.text }]}>
+                    {friend.username || 'Usuário'}
+                  </Text>
+                  {friendData?.isVerified && (
+                    <Ionicons 
+                      name="checkmark-circle" 
+                      size={24} 
+                      color={colors.primary} 
+                      style={styles.verifiedIcon}
                     />
-                    <Text style={[textStyles.body, { color: colors.text, marginLeft: SPACING.md }]}>
-                      {item.title}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={colors.text2}
-                  />
-                </TouchableOpacity>
-                {index !== menuItems.length - 1 && (
-                  <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                  )}
+                </View>
+                <Text style={[textStyles.body, { color: colors.text2 }]}>
+                  {friend.email}
+                </Text>
+                {friendData?.createdAt && (
+                  <Text style={[textStyles.caption, { color: colors.text2, marginTop: SPACING.xs }]}>
+                    Membro desde {format(friendData.createdAt.toDate(), "MMMM yyyy", { locale: ptBR })}
+                  </Text>
                 )}
-              </React.Fragment>
+              </View>
+            </View>
+
+            <View style={[styles.balanceCard, { backgroundColor: colors.surface }]}>
+              <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
+                {Math.abs(balance) === 0 ? 'Sem dívidas pendentes' : 
+                  balance > 0 ? `${friend.username} te deve` : `Você deve para ${friend.username}`}
+              </Text>
+              <Text style={[
+                textStyles.h1,
+                { color: balance > 0 ? colors.success : balance < 0 ? colors.error : colors.text }
+              ]}>
+                {formatCurrency(Math.abs(balance).toString())}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.actionsContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[textStyles.subtitle, { color: colors.text, marginBottom: SPACING.md }]}>
+              Ações Rápidas
+            </Text>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: colors.background }
+                ]}
+                onPress={item.onPress}
+              >
+                <View style={styles.actionContent}>
+                  <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                    <Ionicons name={item.icon} size={24} color={colors.primary} />
+                  </View>
+                  <Text style={[textStyles.body, { color: colors.text, flex: 1 }]}>
+                    {item.title}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={24} color={colors.text2} />
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
@@ -260,89 +185,75 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-  },
-  headerContent: {
-    alignItems: 'center',
-    padding: SPACING.md,
-  },
-  photoContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: moderateScale(120),
-    height: moderateScale(120),
-    marginBottom: SPACING.md,
-  },
-  waveContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '50%',
-    top: 0,
-    overflow: 'hidden',
-  },
-  waveSvg: {
+  headerGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    height: moderateScale(220),
   },
-  photo: {
+  content: {
+    flex: 1,
+  },
+  header: {
+    padding: SPACING.lg,
+  },
+  profileSection: {
+    marginTop: moderateScale(60),
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileImage: {
     width: moderateScale(100),
     height: moderateScale(100),
     borderRadius: moderateScale(50),
     borderWidth: moderateScale(2),
-    position: 'relative',
   },
-  userInfo: {
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
+  nameSection: {
+    marginLeft: SPACING.lg,
+    flex: 1,
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  balanceCard: {
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-  },
-  menuContainer: {
-    paddingHorizontal: SPACING.lg,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.md,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  separator: {
-    height: 1,
-    opacity: 0.5,
-    marginVertical: SPACING.xs,
-  },
-  verifiedBadgeContainer: {
-    marginLeft: SPACING.xs,
-    borderRadius: moderateScale(12),
-    padding: moderateScale(2),
   },
   verifiedIcon: {
-    marginLeft: 0,
+    marginLeft: SPACING.xs,
+  },
+  balanceCard: {
+    marginTop: SPACING.xl,
+    padding: SPACING.lg,
+    borderRadius: moderateScale(16),
+    alignItems: 'center',
+  },
+  actionsContainer: {
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: moderateScale(16),
+  },
+  actionButton: {
+    borderRadius: moderateScale(12),
+    marginBottom: SPACING.sm,
+  },
+  actionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+  },
+  iconContainer: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
   },
   backButton: {
     position: 'absolute',
-    bottom: SPACING,
     top: SPACING.xxl * 2,
-    left: SPACING.md,
-    padding: SPACING.xs,
-    zIndex: 2,
-    borderRadius: moderateScale(20),
+    left: SPACING.lg,
+    padding: SPACING.sm,
+    borderRadius: moderateScale(12),
+    zIndex: 1,
   },
 }); 

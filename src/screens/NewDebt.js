@@ -36,10 +36,15 @@ export function NewDebt({ route, navigation }) {
 
     setLoading(true);
     try {
+      const currentUserId = auth.currentUser.id;
+      
+      // If "Eu vou pagar" is selected (debtor === 'me'), then:
+      // - I am the creditor (I will receive the money later)
+      // - The friend is the debtor (they will pay me)
       const result = await createDebt(
-        debtor === 'me' ? selectedTarget.id : selectedTarget.id,
-        debtor === 'me' ? selectedTarget.id : selectedTarget.id,
-        amount,
+        debtor === 'me' ? auth.currentUser.uid : selectedTarget.id, // creditorId (who will receive)
+        debtor === 'me' ? selectedTarget.id : auth.currentUser.uid, // debtorId (who will pay)
+        parseFloat(amount),
         description
       );
 
