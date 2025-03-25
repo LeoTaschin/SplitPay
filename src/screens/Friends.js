@@ -44,23 +44,31 @@ export function Friends() {
   const navigation = useNavigation();
 
   useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setFriends([]);
+      setLoadingFriends(false);
+      return;
+    }
+
     initializeUserData();
     fetchFriends();
 
     // Adiciona um listener para atualizações em tempo real
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
-        if (doc.exists()) {
-          const userData = doc.data();
-          if (userData.friends) {
-            fetchFriends();
-          }
+    const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data();
+        if (userData.friends) {
+          fetchFriends();
         }
-      });
+      }
+    });
 
-      return () => unsubscribe();
-    }
+    return () => {
+      unsubscribe();
+      setFriends([]);
+      setLoadingFriends(false);
+    };
   }, []);
 
   const calculateBalanceWithFriend = (friendId) => {
@@ -126,9 +134,19 @@ export function Friends() {
   const fetchFriends = async () => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) return;
+      if (!currentUser) {
+        setFriends([]);
+        setLoadingFriends(false);
+        return;
+      }
 
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (!userDoc.exists()) {
+        setFriends([]);
+        setLoadingFriends(false);
+        return;
+      }
+
       const userData = userDoc.data();
       
       if (!userData?.friends?.length) {
@@ -155,7 +173,7 @@ export function Friends() {
       setFriends(friendsData);
     } catch (error) {
       console.error('Erro ao buscar amigos:', error);
-      Alert.alert('Erro', 'Não foi possível carregar seus amigos');
+      setFriends([]);
     } finally {
       setLoadingFriends(false);
     }
@@ -643,6 +661,7 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     paddingVertical: SPACING.md,
+    paddingBottom: SPACING.xxl * 2,
     alignItems: 'center',
     borderTopWidth: 1,
   },
