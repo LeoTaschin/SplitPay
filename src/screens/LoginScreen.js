@@ -18,7 +18,6 @@ import { Logo } from '../components/Logo';
 import { Button } from '../components/Button';
 import { auth } from '../config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import AccountConfirmation from '../screens/AccountConfirmation';
 
 
 const SPACING = 20;

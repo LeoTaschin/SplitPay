@@ -717,6 +717,7 @@ const styles = StyleSheet.create({
     }),
   },
   searchResultInfo: {
+    marginLeft: SPACING.md,
     flex: 1,
   },
   addFriendButton: {

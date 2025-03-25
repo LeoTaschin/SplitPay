@@ -23,7 +23,6 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AccountConfirmation from '../screens/AccountConfirmation';
 
 const SPACING = 20;
 const { height } = Dimensions.get('window');
