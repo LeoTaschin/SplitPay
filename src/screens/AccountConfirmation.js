@@ -25,8 +25,14 @@ export default function AccountConfirmation({ navigation }) {
       isNavigating
     });
 
-    // Se não estiver autenticado e não estiver carregando, redirecionar para login
-    if (!user?.uid && !authLoading) {
+    // Se estiver carregando, não faz nada
+    if (authLoading) {
+      console.log('AccountConfirmation - useEffect - Carregando autenticação, aguardando...');
+      return;
+    }
+
+    // Se não estiver autenticado, redirecionar para login
+    if (!user?.uid) {
       console.log('AccountConfirmation - useEffect - Usuário não autenticado, redirecionando para login');
       navigation.replace('Login');
       return;

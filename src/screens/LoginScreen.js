@@ -62,6 +62,9 @@ export default function LoginScreen({ navigation }) {
       await saveCredentials(email, password);
       console.log('Credenciais salvas com sucesso');
       
+      // Pequena pausa para garantir que a autenticação está completa
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Depois fazemos a navegação
       navigation.replace('AccountConfirmation');
       

@@ -9,6 +9,7 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +25,7 @@ import { ptBR } from 'date-fns/locale';
 export function Profile({ onEditProfile }) {
   const { colors, textStyles } = useTheme();
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [username, setUsername] = useState('');
   const [joinDate, setJoinDate] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
@@ -79,12 +80,14 @@ export function Profile({ onEditProfile }) {
     {
       icon: 'log-out-outline',
       title: 'Sair',
-      onPress: () => {
-        // Add logout logic here
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
+      onPress: async () => {
+        try {
+          await signOut();
+          navigation.navigate('Login');
+        } catch (error) {
+          console.error('Erro ao fazer logout:', error);
+          Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+        }
       },
       color: colors.error,
     },
