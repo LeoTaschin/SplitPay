@@ -9,11 +9,15 @@ import {
   FlatList,
   Image,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { formatCurrency } from '../utils/formatters';
+import { useNavigation } from '@react-navigation/native';
+import { auth } from '../config/firebase';
+import { DebtDetails } from './DebtDetails';
 
 // Componente para animar valores numéricos
 const AnimatedValue = ({ value, style }) => {
@@ -69,7 +73,10 @@ const AnimatedValue = ({ value, style }) => {
 
 export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, onRefresh }) {
   const { colors, textStyles } = useTheme();
+  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   
   // Calcula os totais reais baseados nas dívidas individuais
   const calculatedTotalToReceive = debtsAsCreditor.reduce((sum, debt) => sum + (debt.amount || 0), 0);
@@ -211,8 +218,30 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
     const otherUser = isReceive ? item.debtor : item.creditor;
     const userProfilePic = otherUser?.photoURL || 'default_profile_pic_url';
 
+    const handleTransactionPress = () => {
+      const formattedDebt = {
+        ...item,
+        creditor: isReceive ? {
+          id: auth.currentUser.uid,
+          username: auth.currentUser.displayName || 'Você',
+          photoURL: auth.currentUser.photoURL || 'https://via.placeholder.com/150'
+        } : otherUser,
+        debtor: isReceive ? otherUser : {
+          id: auth.currentUser.uid,
+          username: auth.currentUser.displayName || 'Você',
+          photoURL: auth.currentUser.photoURL || 'https://via.placeholder.com/150'
+        }
+      };
+      
+      setSelectedDebt(formattedDebt);
+      setModalVisible(true);
+    };
+
     return (
-      <View style={[styles.transactionCard, { backgroundColor: colors.cardBackground }]}>
+      <TouchableOpacity 
+        onPress={handleTransactionPress}
+        style={[styles.transactionCard, { backgroundColor: colors.cardBackground }]}
+      >
         <View style={styles.transactionIconContainer}>
           <Image 
             source={{ uri: userProfilePic }} 
@@ -263,7 +292,7 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
             </Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -347,6 +376,14 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
           />
         )}
       </View>
+
+      {selectedDebt && (
+        <DebtDetails 
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          debt={selectedDebt}
+        />
+      )}
     </View>
   );
 }

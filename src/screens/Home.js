@@ -271,12 +271,6 @@ export default function HomeScreen({ navigation }) {
               <Text style={[textStyles.caption, { color: colors.text, textTransform: 'uppercase' }]}>
                 Balanço Geral
               </Text>
-              <Ionicons 
-                name={isPositive ? "trending-up" : "trending-down"} 
-                size={16} 
-                color={isPositive ? colors.success : colors.error} 
-                style={styles.balanceIcon}
-              />
             </View>
             <TouchableOpacity 
               onPress={fetchDebts}
@@ -379,7 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   balanceCard: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
     borderRadius: moderateScale(16),
     ...Platform.select({
       ios: {
