@@ -111,13 +111,6 @@ export function NewDebt({ route, navigation }) {
             style={styles.headerGradient}
           />
           
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={[styles.backButton, { backgroundColor: colors.surface }]}
-          >
-            <Ionicons name="close-sharp" size={24} color={colors.text} />
-          </TouchableOpacity>
-
           <ScrollView 
             style={styles.content} 
             showsVerticalScrollIndicator={false}
@@ -125,6 +118,13 @@ export function NewDebt({ route, navigation }) {
             keyboardDismissMode="interactive"
           >
             <View style={styles.header}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={[styles.backButton, { backgroundColor: colors.surface }]}
+              >
+                <Ionicons name="close-sharp" size={24} color={colors.text} />
+              </TouchableOpacity>
+              
               <View style={styles.profileSection}>
                 <Image
                   source={{ uri: selectedFriend?.photoURL || 'https://via.placeholder.com/150' }}
@@ -375,12 +375,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   backButton: {
-    position: 'absolute',
-    top: SPACING.md * 1.5,
-    left: SPACING.lg,
-    padding: SPACING.sm,
+    alignSelf: 'flex-end',
     borderRadius: moderateScale(12),
-    zIndex: 1,
     width: moderateScale(40),
     height: moderateScale(40),
     justifyContent: 'center',
