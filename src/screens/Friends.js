@@ -17,6 +17,7 @@ import {
   Modal,
   Animated,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
@@ -42,6 +43,8 @@ export function Friends() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const navigation = useNavigation();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const keyboardAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -54,7 +57,6 @@ export function Friends() {
     initializeUserData();
     fetchFriends();
 
-    // Adiciona um listener para atualizações em tempo real
     const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
@@ -64,10 +66,39 @@ export function Friends() {
       }
     });
 
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+        Animated.spring(keyboardAnimation, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+      }
+    );
+
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.spring(keyboardAnimation, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start(() => {
+          setKeyboardHeight(0);
+        });
+      }
+    );
+
     return () => {
       unsubscribe();
       setFriends([]);
       setLoadingFriends(false);
+      showSubscription.remove();
+      hideSubscription.remove();
     };
   }, []);
 
@@ -435,6 +466,23 @@ export function Friends() {
     }
   }, []);
 
+  const handleBackgroundPress = () => {
+    console.log('Background pressed - This should not happen');
+  };
+
+  const handleInputFocus = () => {
+    console.log('Input focused');
+  };
+
+  const handleInputBlur = () => {
+    console.log('Input blurred - Keyboard losing focus');
+  };
+
+  const handleModalPress = (event) => {
+    event.stopPropagation();
+    console.log('Modal pressed at:', event.nativeEvent.locationX, event.nativeEvent.locationY);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
@@ -478,75 +526,96 @@ export function Friends() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => {
+          console.log('Modal onRequestClose triggered');
           setIsSearchModalVisible(false);
           setSearchUsername('');
           setSearchResults(null);
           setSearchError('');
         }}
-        keyboardShouldPersistTaps="handled"
+        statusBarTranslucent
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+        <View 
+          style={[styles.modalOverlay]}
+          pointerEvents="box-none"
         >
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[textStyles.h3, { color: colors.text }]}>
-                Adicionar Amigo
-              </Text>
-              <TouchableOpacity 
-                onPress={() => {
-                  setIsSearchModalVisible(false);
-                  setSearchUsername('');
-                  setSearchResults(null);
-                  setSearchError('');
-                }}
-                style={styles.closeButton}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <View style={{ flex: 1 }}>
+              <Animated.View 
+                style={[
+                  styles.modalContainer,
+                  { 
+                    backgroundColor: colors.background,
+                  }
+                ]}
               >
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[textStyles.h3, { color: colors.text }]}>
+                    Adicionar Amigo
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      console.log('Close button pressed');
+                      setIsSearchModalVisible(false);
+                      setSearchUsername('');
+                      setSearchResults(null);
+                      setSearchError('');
+                    }}
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={[styles.searchInput, { 
-                  backgroundColor: colors.card,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Buscar amigo por apelido..."
-                placeholderTextColor={colors.text2}
-                value={searchUsername}
-                onChangeText={(text) => {
-                  setSearchUsername(text);
-                  searchUser(text);
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={[styles.searchInput, { 
+                      backgroundColor: colors.card,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    }]}
+                    placeholder="Buscar amigo por apelido..."
+                    placeholderTextColor={colors.text2}
+                    value={searchUsername}
+                    onChangeText={(text) => {
+                      console.log('Input text changed:', text);
+                      setSearchUsername(text);
+                      searchUser(text);
+                    }}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoFocus={true}
+                  />
+                </View>
 
-            {loading ? (
-              <View style={styles.searchContent}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            ) : searchError ? (
-              <View style={styles.searchContent}>
-                <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
-                  {searchError}
-                </Text>
-              </View>
-            ) : searchResults ? (
-              <FlatList
-                data={searchResults}
-                renderItem={renderSearchResult}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.searchResultsList}
-                showsVerticalScrollIndicator={false}
-              />
-            ) : null}
-          </View>
-        </KeyboardAvoidingView>
+                {loading ? (
+                  <View style={styles.searchContent}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  </View>
+                ) : searchError ? (
+                  <View style={styles.searchContent}>
+                    <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+                      {searchError}
+                    </Text>
+                  </View>
+                ) : searchResults ? (
+                  <FlatList
+                    data={searchResults}
+                    renderItem={renderSearchResult}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.searchResultsList}
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : null}
+              </Animated.View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {showSuccessAlert && (
@@ -674,6 +743,10 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     borderWidth: 1,
     backgroundColor: 'transparent',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   modalContainer: {
     flex: 1,
@@ -863,5 +936,8 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.xs,
     borderRadius: moderateScale(12),
     padding: moderateScale(2),
+  },
+  keyboardView: {
+    flex: 1,
   },
 }); 

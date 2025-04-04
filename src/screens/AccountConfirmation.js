@@ -38,9 +38,6 @@ export default function AccountConfirmation({ navigation }) {
       return;
     }
     
-    // Desativa o teclado quando a tela é montada
-    Keyboard.dismiss();
-    
     const fetchUsername = async () => {
       if (user?.uid) {
         try {
@@ -65,19 +62,10 @@ export default function AccountConfirmation({ navigation }) {
       fetchUsername();
     }
 
-    // Adiciona listeners para garantir que o teclado permaneça fechado
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        Keyboard.dismiss();
-      }
-    );
-
     return () => {
-      console.log('AccountConfirmation - useEffect - Desmontando componente');
-      keyboardDidShowListener.remove();
+      // Cleanup
     };
-  }, [user, authLoading]);
+  }, [user, authLoading, navigation]);
 
   const handleStartApp = async () => {
     try {

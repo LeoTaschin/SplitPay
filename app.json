@@ -95,8 +95,6 @@
       "androidCollapsedTitle": "Nova notificação"
     },
     "owner": "leotaschin",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "2.0.0"
   }
 }

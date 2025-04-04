@@ -101,7 +101,7 @@ export function NewDebt({ route, navigation }) {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colors.statusBar} />
@@ -121,8 +121,8 @@ export function NewDebt({ route, navigation }) {
           <ScrollView 
             style={styles.content} 
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="none"
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="interactive"
           >
             <View style={styles.header}>
               <View style={styles.profileSection}>
