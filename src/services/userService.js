@@ -131,6 +131,8 @@ export const getUserFriends = async (userId) => {
 // Remover amigo
 export const removeFriend = async (currentUserId, friendId) => {
   try {
+    console.log('userService - removeFriend - Iniciando remoção de amigo:', { currentUserId, friendId });
+    
     // Verificar se existem dívidas pendentes
     const debtsAsCreditorQuery = query(
       collection(db, 'debts'),
@@ -161,28 +163,64 @@ export const removeFriend = async (currentUserId, friendId) => {
       0
     );
 
-    // Se existem dívidas pendentes, retorna erro
-    if (totalToReceive > 0 || totalToPay > 0) {
+    // Calcular o saldo final (o quanto você deve menos o quanto você está para receber)
+    const finalBalance = totalToReceive - totalToPay;
+    
+    console.log('userService - removeFriend - Saldo calculado:', { 
+      totalToReceive, 
+      totalToPay, 
+      finalBalance 
+    });
+
+    // Se o saldo final não for zero, retorna erro
+    if (finalBalance !== 0) {
+      console.log('userService - removeFriend - Saldo não é zero, não é possível remover');
       return {
         success: false,
         error: 'PENDING_DEBTS',
         totalToReceive,
-        totalToPay
+        totalToPay,
+        finalBalance
       };
     }
 
+    // Verificar se o usuário e o amigo existem
+    const [userDoc, friendDoc] = await Promise.all([
+      getDoc(doc(db, 'users', currentUserId)),
+      getDoc(doc(db, 'users', friendId))
+    ]);
+
+    if (!userDoc.exists()) {
+      console.error('userService - removeFriend - Usuário não encontrado:', currentUserId);
+      return { success: false, error: 'USER_NOT_FOUND' };
+    }
+
+    if (!friendDoc.exists()) {
+      console.error('userService - removeFriend - Amigo não encontrado:', friendId);
+      return { success: false, error: 'FRIEND_NOT_FOUND' };
+    }
+
     // Remove friend from current user's friends list
-    const userRef = doc(db, 'users', currentUserId);
-    const userDoc = await getDoc(userRef);
-    const updatedFriends = userDoc.data().friends.filter(id => id !== friendId);
-    await updateDoc(userRef, { friends: updatedFriends });
-
+    const userFriends = userDoc.data().friends || [];
+    const updatedFriends = userFriends.filter(id => id !== friendId);
+    
     // Remove current user from friend's friends list
-    const friendRef = doc(db, 'users', friendId);
-    const friendDoc = await getDoc(friendRef);
-    const updatedFriendFriends = friendDoc.data().friends.filter(id => id !== currentUserId);
-    await updateDoc(friendRef, { friends: updatedFriendFriends });
+    const friendFriends = friendDoc.data().friends || [];
+    const updatedFriendFriends = friendFriends.filter(id => id !== currentUserId);
+    
+    // Atualizar ambos os documentos em uma transação
+    await Promise.all([
+      updateDoc(doc(db, 'users', currentUserId), { 
+        friends: updatedFriends,
+        updatedAt: serverTimestamp()
+      }),
+      updateDoc(doc(db, 'users', friendId), { 
+        friends: updatedFriendFriends,
+        updatedAt: serverTimestamp()
+      })
+    ]);
 
+    console.log('userService - removeFriend - Amigo removido com sucesso');
     return { success: true };
   } catch (error) {
     console.error('userService - removeFriend - Erro:', error);

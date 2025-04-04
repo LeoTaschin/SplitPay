@@ -68,32 +68,98 @@ export function FriendProfile({ route }) {
 
   const handleRemoveFriend = async () => {
     try {
-      const result = await removeFriend(auth.currentUser.uid, friend.id);
+      const balance = calculateBalance();
       
-      if (!result.success) {
-        if (result.error === 'PENDING_DEBTS') {
-          Alert.alert(
-            'Dívidas Pendentes',
-            `Existem dívidas pendentes com ${friend.username}:\n\n` +
-            (result.totalToReceive > 0 ? `${friend.username} te deve ${formatCurrency(result.totalToReceive.toString())}\n` : '') +
-            (result.totalToPay > 0 ? `Você deve ${formatCurrency(result.totalToPay.toString())} para ${friend.username}\n` : '') +
-            '\nVocê precisa caducar ou resolver todas as dívidas antes de remover o amigo.',
-            [
-              {
-                text: 'OK',
-                style: 'cancel'
-              }
-            ]
-          );
-          return;
-        }
-        
-        Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
+      if (balance !== 0) {
+        Alert.alert(
+          'Dívidas Pendentes',
+          `Existem dívidas pendentes com ${friend.username}:\n\n` +
+          (balance > 0 ? `${friend.username} te deve ${formatCurrency(balance.toString())}\n` : '') +
+          (balance < 0 ? `Você deve ${formatCurrency(Math.abs(balance).toString())} para ${friend.username}\n` : '') +
+          '\nVocê precisa caducar ou resolver todas as dívidas antes de remover o amigo.',
+          [
+            {
+              text: 'OK',
+              style: 'cancel'
+            }
+          ]
+        );
         return;
       }
+      
+      Alert.alert(
+        'Remover Amigo',
+        `Tem certeza que deseja remover ${friend.username} da sua lista de amigos?`,
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel'
+          },
+          {
+            text: 'Remover',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Mostrar indicador de carregamento
+                Alert.alert(
+                  'Processando',
+                  'Removendo amigo...',
+                  [],
+                  { cancelable: false }
+                );
+                
+                const result = await removeFriend(auth.currentUser.uid, friend.id);
+                
+                // Não precisamos fechar o alerta de carregamento, pois ele será substituído pelo próximo alerta
+                
+                if (!result.success) {
+                  if (result.error === 'PENDING_DEBTS') {
+                    Alert.alert(
+                      'Dívidas Pendentes',
+                      `Existem dívidas pendentes com ${friend.username}:\n\n` +
+                      (result.totalToReceive > 0 ? `${friend.username} te deve ${formatCurrency(result.totalToReceive.toString())}\n` : '') +
+                      (result.totalToPay > 0 ? `Você deve ${formatCurrency(result.totalToPay.toString())} para ${friend.username}\n` : '') +
+                      '\nVocê precisa caducar ou resolver todas as dívidas antes de remover o amigo.',
+                      [
+                        {
+                          text: 'OK',
+                          style: 'cancel'
+                        }
+                      ]
+                    );
+                    return;
+                  }
+                  
+                  if (result.error === 'USER_NOT_FOUND' || result.error === 'FRIEND_NOT_FOUND') {
+                    Alert.alert('Erro', 'Não foi possível encontrar o usuário ou o amigo. Tente novamente.');
+                    return;
+                  }
+                  
+                  Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
+                  return;
+                }
 
-      navigation.navigate('Home');
+                // Mostrar mensagem de sucesso
+                Alert.alert(
+                  'Sucesso',
+                  `${friend.username} foi removido da sua lista de amigos.`,
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => navigation.navigate('Home')
+                    }
+                  ]
+                );
+              } catch (error) {
+                console.error('FriendProfile - handleRemoveFriend - Erro:', error);
+                Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
+      console.error('FriendProfile - handleRemoveFriend - Erro:', error);
       Alert.alert('Erro', 'Não foi possível remover o amigo. Tente novamente.');
     }
   };
@@ -103,21 +169,7 @@ export function FriendProfile({ route }) {
       icon: 'trash-outline',
       title: 'Remover Amigo',
       onPress: () => {
-        Alert.alert(
-          'Remover Amigo',
-          `Tem certeza que deseja remover ${friend.username} da sua lista de amigos?`,
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel'
-            },
-            {
-              text: 'Remover',
-              style: 'destructive',
-              onPress: handleRemoveFriend
-            }
-          ]
-        );
+        handleRemoveFriend();
       },
     },
     {
@@ -159,7 +211,7 @@ export function FriendProfile({ route }) {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.profileSection}>
               <Image
@@ -231,7 +283,7 @@ export function FriendProfile({ route }) {
               </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -253,12 +305,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingTop: moderateScale(60),
   },
   header: {
     padding: SPACING.lg,
   },
   profileSection: {
-    marginTop: moderateScale(60),
     flexDirection: 'row',
     alignItems: 'center',
   },
