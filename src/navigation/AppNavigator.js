@@ -22,7 +22,6 @@ import { NewDebt } from '../screens/NewDebt';
 import { Activity } from '../screens/Activity';
 import { EditProfile } from '../screens/EditProfile';
 import { Settings } from '../screens/Settings';
-import { NotificationsScreen } from '../screens/Notifications';
 import { Privacy } from '../screens/Privacy';
 import { Help } from '../screens/Help';
 import { About } from '../screens/About';
@@ -147,14 +146,6 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="Settings" 
               component={Settings}
-              options={{
-                animation: 'slide_from_right',
-                animationDuration: 300,
-              }}
-            />
-            <Stack.Screen 
-              name="NotificationsScreen" 
-              component={NotificationsScreen}
               options={{
                 animation: 'slide_from_right',
                 animationDuration: 300,
