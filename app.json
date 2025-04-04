@@ -14,6 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leotaschin.SplitPay",
+      "buildNumber": "2",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para permitir que você escolha uma foto de perfil.",
         "NSCameraUsageDescription": "Precisamos acessar sua câmera para permitir que você tire uma foto de perfil.",
