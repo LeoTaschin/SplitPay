@@ -13,6 +13,7 @@ import {
   Image,
   Dimensions,
   Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
@@ -33,6 +34,7 @@ export function NewDebt({ route, navigation }) {
   const [description, setDescription] = useState(prefillDescription || '');
   const [loading, setLoading] = useState(false);
   const [debtor, setDebtor] = useState(forceDebtor || 'other');
+  const [isCreditor, setIsCreditor] = useState(true);
 
   const selectedFriend = friend || selectedTarget;
 
@@ -117,158 +119,204 @@ export function NewDebt({ route, navigation }) {
             keyboardShouldPersistTaps="always"
             keyboardDismissMode="interactive"
           >
-            <View style={styles.header}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={[styles.backButton, { backgroundColor: colors.surface }]}
-              >
-                <Ionicons name="close-sharp" size={24} color={colors.text} />
-              </TouchableOpacity>
-              
-              <View style={styles.profileSection}>
-                <Image
-                  source={{ uri: selectedFriend?.photoURL || 'https://via.placeholder.com/150' }}
-                  style={[styles.profileImage, { borderColor: colors.primary }]}
-                />
-                
-                <View style={styles.nameSection}>
-                  <View style={styles.nameContainer}>
-                    <Text style={[textStyles.h2, { color: colors.text }]}>
-                      {selectedFriend?.username || 'Usuário'}
-                    </Text>
-                    {selectedFriend?.isVerified && (
-                      <Ionicons 
-                        name="checkmark-circle" 
-                        size={24} 
-                        color={colors.primary} 
-                        style={styles.verifiedIcon}
-                      />
-                    )}
-                  </View>
-                  <Text style={[textStyles.body, { color: colors.text }]}>
-                    {isPositive ? (
-                      <>
-                        {`${selectedFriend?.username || 'Usuário'} te deve `}
-                        <Text style={{ fontWeight: 'bold' }}>
-                          {`R$ ${balance.toFixed(2)}`}
-                        </Text>
-                      </>
-                    ) : isNegative ? (
-                      <>
-                        Você deve{' '}
-                        <Text style={{ fontWeight: 'bold' }}>
-                          {`R$ ${Math.abs(balance).toFixed(2)}`}
-                        </Text>
-                        {` para ${selectedFriend?.username || 'Usuário'}`}
-                      </>
-                    ) : (
-                      'Vocês estão quites'
-                    )}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
-                <View style={styles.inputSection}>
-                  <Text style={[textStyles.subtitle, { color: colors.text, marginBottom: SPACING.md }]}>
-                    Detalhes da Dívida
-                  </Text>
-
-                  <View style={styles.amountContainer}>
-                    <Text style={[textStyles.caption, { color: colors.text2 }]}>Valor</Text>
-                    <View style={[styles.amountInputWrapper, { backgroundColor: colors.background }]}>
-                      <Text style={[textStyles.h2, { color: colors.text }]}>R$</Text>
-                      <TextInput
-                        style={[styles.amountInput, { color: colors.text }]}
-                        value={amount}
-                        onChangeText={handleAmountChange}
-                        placeholder="0,00"
-                        placeholderTextColor={colors.text2}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.descriptionContainer}>
-                    <Text style={[textStyles.caption, { color: colors.text2 }]}>Descrição</Text>
-                    <TextInput
-                      style={[styles.descriptionInput, { 
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                      }]}
-                      value={description}
-                      onChangeText={setDescription}
-                      placeholder="Ex: Almoço, Uber, etc."
-                      placeholderTextColor={colors.text2}
-                      multiline
+            <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.header}>
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={[styles.backButton, { backgroundColor: colors.surface }]}
+                  >
+                    <Ionicons name="close-sharp" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  
+                  <View style={styles.profileSection}>
+                    <Image
+                      source={{ uri: selectedFriend?.photoURL || 'https://via.placeholder.com/150' }}
+                      style={[styles.profileImage, { borderColor: colors.primary }]}
                     />
-                  </View>
-
-                  <View style={styles.debtorContainer}>
-                    <Text style={[textStyles.caption, { color: colors.text2, marginBottom: SPACING.sm }]}>
-                      Quem vai pagar?
-                    </Text>
-                    <View style={styles.debtorSelector}>
-                      <TouchableOpacity
-                        style={[
-                          styles.debtorOption,
-                          { 
-                            backgroundColor: debtor === 'me' ? colors.primary : colors.background,
-                            opacity: forceDebtor ? 0.5 : 1
-                          }
-                        ]}
-                        onPress={() => !forceDebtor && setDebtor('me')}
-                        disabled={Boolean(forceDebtor)}
-                      >
-                        <View style={styles.debtorOptionContent}>
-                          <Text style={[
-                            textStyles.bodyLarge,
-                            { color: debtor === 'me' ? colors.white : colors.text }
-                          ]}>
-                            Eu vou pagar
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.debtorOption,
-                          { 
-                            backgroundColor: debtor === 'other' ? colors.primary : colors.background,
-                            opacity: forceDebtor ? 0.5 : 1
-                          }
-                        ]}
-                        onPress={() => !forceDebtor && setDebtor('other')}
-                        disabled={Boolean(forceDebtor)}
-                      >
-                        <View style={styles.debtorOptionContent}>
-                          <Text style={[
-                            textStyles.bodyLarge,
-                            { color: debtor === 'other' ? colors.white : colors.text }
-                          ]}>
-                            {selectedFriend?.username || 'Outro'} vai pagar
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
+                    
+                    <View style={styles.nameSection}>
+                      <View style={styles.nameContainer}>
+                        <Text style={[textStyles.h2, { color: colors.text }]}>
+                          {selectedFriend?.username || 'Usuário'}
+                        </Text>
+                        {selectedFriend?.isVerified && (
+                          <Ionicons 
+                            name="checkmark-circle" 
+                            size={24} 
+                            color={colors.primary} 
+                            style={styles.verifiedIcon}
+                          />
+                        )}
+                      </View>
+                      <Text style={[textStyles.body, { color: colors.text }]}>
+                        {isPositive ? (
+                          <>
+                            {`${selectedFriend?.username || 'Usuário'} te deve `}
+                            <Text style={{ fontWeight: 'bold' }}>
+                              {`R$ ${balance.toFixed(2)}`}
+                            </Text>
+                          </>
+                        ) : isNegative ? (
+                          <>
+                            Você deve{' '}
+                            <Text style={{ fontWeight: 'bold' }}>
+                              {`R$ ${Math.abs(balance).toFixed(2)}`}
+                            </Text>
+                            {` para ${selectedFriend?.username || 'Usuário'}`}
+                          </>
+                        ) : (
+                          'Vocês estão quites'
+                        )}
+                      </Text>
                     </View>
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    { backgroundColor: colors.primary },
-                    loading && styles.submitButtonDisabled
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={loading}
-                >
-                  <Text style={[textStyles.button, { color: colors.white }]}>
-                    {loading ? 'Criando...' : 'Criar Dívida'}
-                  </Text>
-                </TouchableOpacity>
+                <View style={[styles.formContainer, { backgroundColor: colors.surface, padding: SPACING.md, margin: SPACING.md}]}>
+                  <View style={[styles.inputSection, { padding: SPACING.md }]}>
+                    <Text style={[textStyles.subtitle, { color: colors.text, marginBottom: SPACING.md }]}>
+                      Detalhes da Dívida
+                    </Text>
+
+                    <View style={styles.amountContainer}>
+                      <Text style={[textStyles.caption, { color: colors.text2 }]}>Valor</Text>
+                      <View style={[styles.amountInputWrapper, { backgroundColor: colors.background }]}>
+                        <Text style={[textStyles.h2, { color: colors.text }]}>R$</Text>
+                        <TextInput
+                          style={[styles.amountInput, { color: colors.text }]}
+                          value={amount}
+                          onChangeText={handleAmountChange}
+                          placeholder="0,00"
+                          placeholderTextColor={colors.text2}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.descriptionContainer}>
+                      <Text style={[textStyles.caption, { color: colors.text2 }]}>Descrição</Text>
+                      <TextInput
+                        style={[styles.descriptionInput, { 
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                        }]}
+                        value={description}
+                        onChangeText={setDescription}
+                        placeholder="Ex: Almoço, Uber, etc."
+                        placeholderTextColor={colors.text2}
+                        multiline
+                      />
+                    </View>
+
+                    <View style={styles.debtorContainer}>
+                      <Text style={[textStyles.caption, { color: colors.text2, marginBottom: SPACING.sm }]}>
+                        Quem vai pagar?
+                      </Text>
+                      <View style={[styles.debtorSelector, { flexDirection: 'row', justifyContent: 'space-between' }]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.debtorOption,
+                            { 
+                              backgroundColor: debtor === 'me' ? colors.primary : colors.background,
+                              opacity: forceDebtor ? 0.5 : 1,
+                              borderRadius: moderateScale(8),
+                              padding: SPACING.md,
+                              width: '48%',
+                            }
+                          ]}
+                          onPress={() => !forceDebtor && setDebtor('me')}
+                          disabled={Boolean(forceDebtor)}
+                        >
+                          <View style={[styles.debtorOptionContent, { alignItems: 'center' }]}>
+                            <View style={[
+                              styles.iconContainer,
+                              { 
+                                backgroundColor: debtor === 'me' ? colors.white : colors.background,
+                                padding: SPACING.sm,
+                                borderRadius: moderateScale(20),
+                                marginBottom: SPACING.sm
+                              }
+                            ]}>
+                              <Ionicons 
+                                name="arrow-up-outline" 
+                                size={24} 
+                                color={debtor === 'me' ? colors.white : colors.text} 
+                              />
+                            </View>
+                            <Text style={[
+                              textStyles.bodyLarge,
+                              { 
+                                color: debtor === 'me' ? colors.white : colors.text,
+                                textAlign: 'center'
+                              }
+                            ]}>
+                              Eu vou pagar
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.debtorOption,
+                            { 
+                              backgroundColor: debtor === 'other' ? colors.primary : colors.background,
+                              opacity: forceDebtor ? 0.5 : 1,
+                              borderRadius: moderateScale(8),
+                              padding: SPACING.md,
+                              width: '48%',
+                            }
+                          ]}
+                          onPress={() => !forceDebtor && setDebtor('other')}
+                          disabled={Boolean(forceDebtor)}
+                        >
+                          <View style={[styles.debtorOptionContent, { alignItems: 'center' }]}>
+                            <View style={[
+                              styles.iconContainer,
+                              { 
+                                backgroundColor: debtor === 'other' ? colors.white : colors.background,
+                                padding: SPACING.sm,
+                                borderRadius: moderateScale(20),
+                                marginBottom: SPACING.sm
+                              }
+                            ]}>
+                              <Ionicons 
+                                name="arrow-down-outline" 
+                                size={24} 
+                                color={debtor === 'other' ? colors.white : colors.text} 
+                              />
+                            </View>
+                            <Text style={[
+                              textStyles.bodyLarge,
+                              { 
+                                color: debtor === 'other' ? colors.white : colors.text,
+                                textAlign: 'center'
+                              }
+                            ]}>
+                              {selectedFriend?.username || 'Outro'} vai pagar
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.submitButton,
+                      { backgroundColor: colors.primary },
+                      loading && styles.submitButtonDisabled
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                  >
+                    <Text style={[textStyles.button, { color: colors.white }]}>
+                      {loading ? 'Criando...' : 'Criar Dívida'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </TouchableWithoutFeedback>
           </ScrollView>
         </SafeAreaView>
       </View>
@@ -324,7 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
   },
   inputSection: {
-    gap: SPACING.lg,
+    padding: SPACING.lg,
   },
   amountContainer: {
     marginBottom: SPACING.md,
@@ -353,7 +401,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   debtorContainer: {
-    marginBottom: SPACING.xl,
+    marginBottom: 0,
   },
   debtorSelector: {
     gap: SPACING.md,
@@ -381,5 +429,9 @@ const styles = StyleSheet.create({
     height: moderateScale(40),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  iconContainer: {
+    padding: SPACING.sm,
+    borderRadius: moderateScale(20),
   },
 }); 

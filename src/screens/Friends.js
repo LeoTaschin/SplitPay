@@ -534,88 +534,90 @@ export function Friends() {
         }}
         statusBarTranslucent
       >
-        <View 
-          style={[styles.modalOverlay]}
-          pointerEvents="box-none"
-        >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View 
+            style={[styles.modalOverlay]}
+            pointerEvents="box-none"
           >
-            <View style={{ flex: 1 }}>
-              <Animated.View 
-                style={[
-                  styles.modalContainer,
-                  { 
-                    backgroundColor: colors.background,
-                  }
-                ]}
-              >
-                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                  <Text style={[textStyles.h3, { color: colors.text }]}>
-                    Adicionar Amigo
-                  </Text>
-                  <TouchableOpacity 
-                    onPress={() => {
-                      console.log('Close button pressed');
-                      setIsSearchModalVisible(false);
-                      setSearchUsername('');
-                      setSearchResults(null);
-                      setSearchError('');
-                    }}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons name="close" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.searchContainer}>
-                  <TextInput
-                    style={[styles.searchInput, { 
-                      backgroundColor: colors.card,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    }]}
-                    placeholder="Buscar amigo por apelido..."
-                    placeholderTextColor={colors.text2}
-                    value={searchUsername}
-                    onChangeText={(text) => {
-                      console.log('Input text changed:', text);
-                      setSearchUsername(text);
-                      searchUser(text);
-                    }}
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoFocus={true}
-                  />
-                </View>
-
-                {loading ? (
-                  <View style={styles.searchContent}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                  </View>
-                ) : searchError ? (
-                  <View style={styles.searchContent}>
-                    <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
-                      {searchError}
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+              <View style={{ flex: 1 }}>
+                <Animated.View 
+                  style={[
+                    styles.modalContainer,
+                    { 
+                      backgroundColor: colors.background,
+                    }
+                  ]}
+                >
+                  <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                    <Text style={[textStyles.h3, { color: colors.text }]}>
+                      Adicionar Amigo
                     </Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        console.log('Close button pressed');
+                        setIsSearchModalVisible(false);
+                        setSearchUsername('');
+                        setSearchResults(null);
+                        setSearchError('');
+                      }}
+                      style={styles.closeButton}
+                    >
+                      <Ionicons name="close" size={24} color={colors.text} />
+                    </TouchableOpacity>
                   </View>
-                ) : searchResults ? (
-                  <FlatList
-                    data={searchResults}
-                    renderItem={renderSearchResult}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.searchResultsList}
-                    showsVerticalScrollIndicator={false}
-                  />
-                ) : null}
-              </Animated.View>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
+
+                  <View style={styles.searchContainer}>
+                    <TextInput
+                      style={[styles.searchInput, { 
+                        backgroundColor: colors.card,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      }]}
+                      placeholder="Buscar amigo por apelido..."
+                      placeholderTextColor={colors.text2}
+                      value={searchUsername}
+                      onChangeText={(text) => {
+                        console.log('Input text changed:', text);
+                        setSearchUsername(text);
+                        searchUser(text);
+                      }}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoFocus={true}
+                    />
+                  </View>
+
+                  {loading ? (
+                    <View style={styles.searchContent}>
+                      <ActivityIndicator size="large" color={colors.primary} />
+                    </View>
+                  ) : searchError ? (
+                    <View style={styles.searchContent}>
+                      <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+                        {searchError}
+                      </Text>
+                    </View>
+                  ) : searchResults ? (
+                    <FlatList
+                      data={searchResults}
+                      renderItem={renderSearchResult}
+                      keyExtractor={item => item.id}
+                      contentContainerStyle={styles.searchResultsList}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  ) : null}
+                </Animated.View>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {showSuccessAlert && (

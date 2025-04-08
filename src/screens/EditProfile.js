@@ -55,16 +55,23 @@ export function EditProfile({ navigation }) {
         return;
       }
 
-      if (username === currentUsername) {
+      if (username.toLowerCase() === currentUsername.toLowerCase()) {
+        return;
+      }
+
+      // Validate username length
+      if (username.length < 3 || username.length > 20) {
+        Alert.alert('Erro', 'O nome de usuário deve ter entre 3 e 20 caracteres.');
         return;
       }
 
       setLoading(true);
 
-      // Check if username is available
-      const usernameDoc = await getDoc(doc(db, 'usernames', username));
+      // Check if username is available (case-insensitive)
+      const usernameDoc = await getDoc(doc(db, 'usernames', username.toLowerCase()));
       if (usernameDoc.exists()) {
         Alert.alert('Erro', 'Este nome de usuário já está em uso.');
+        setLoading(false);
         return;
       }
 
@@ -73,16 +80,16 @@ export function EditProfile({ navigation }) {
       
       // Remove old username from usernames collection
       if (currentUsername) {
-        batch.delete(doc(db, 'usernames', currentUsername));
+        batch.delete(doc(db, 'usernames', currentUsername.toLowerCase()));
       }
       
-      // Add new username to usernames collection
-      batch.set(doc(db, 'usernames', username), {
+      // Add new username to usernames collection (always store in lowercase)
+      batch.set(doc(db, 'usernames', username.toLowerCase()), {
         uid: user.uid,
         updatedAt: new Date()
       });
       
-      // Update username in users collection
+      // Update username in users collection (store original case)
       batch.update(doc(db, 'users', user.uid), {
         username: username,
         updatedAt: new Date()
@@ -209,8 +216,14 @@ export function EditProfile({ navigation }) {
           </View>
           <TouchableOpacity
             onPress={handleUpdateUsername}
-            style={[styles.updateButton, { backgroundColor: colors.primary }]}
-            disabled={loading || username === currentUsername}
+            style={[
+              styles.updateButton, 
+              { 
+                backgroundColor: colors.primary,
+                opacity: username.trim().length >= 3 ? 1 : 0.4
+              }
+            ]}
+            disabled={loading || username === currentUsername || username.trim().length < 3}
           >
             <Text style={[textStyles.button, { color: colors.surface }]}>
               {loading ? 'Atualizando...' : 'Atualizar nome de usuário'}
