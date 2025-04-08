@@ -124,12 +124,18 @@ export function NewDebt({ route, navigation }) {
                 <View style={styles.header}>
                   <TouchableOpacity
                     onPress={() => navigation.goBack()}
-                    style={[styles.backButton, { backgroundColor: colors.surface }]}
+                    style={[styles.backButton, { 
+                      backgroundColor: colors.surface, 
+                      position: 'absolute',
+                      top: moderateScale(20),
+                      right: moderateScale(20),
+                      zIndex: 10
+                    }]}
                   >
                     <Ionicons name="close-sharp" size={24} color={colors.text} />
                   </TouchableOpacity>
                   
-                  <View style={styles.profileSection}>
+                  <View style={[styles.profileSection, { marginTop: moderateScale(40) }]}>
                     <Image
                       source={{ uri: selectedFriend?.photoURL || 'https://via.placeholder.com/150' }}
                       style={[styles.profileImage, { borderColor: colors.primary }]}
@@ -241,7 +247,7 @@ export function NewDebt({ route, navigation }) {
                               <Ionicons 
                                 name="arrow-up-outline" 
                                 size={24} 
-                                color={debtor === 'me' ? colors.white : colors.text} 
+                                color={debtor === 'me' ? colors.primary : colors.text} 
                               />
                             </View>
                             <Text style={[
@@ -283,7 +289,7 @@ export function NewDebt({ route, navigation }) {
                               <Ionicons 
                                 name="arrow-down-outline" 
                                 size={24} 
-                                color={debtor === 'other' ? colors.white : colors.text} 
+                                color={debtor === 'other' ? colors.primary : colors.text} 
                               />
                             </View>
                             <Text style={[
@@ -345,7 +351,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
   profileSection: {
-    marginTop: moderateScale(60),
+    marginTop: moderateScale(40),
     flexDirection: 'row',
     alignItems: 'center',
   },
