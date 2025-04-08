@@ -22,7 +22,7 @@ import { db, auth } from '../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useDebts } from '../hooks/useDebts';
 import { createDebt } from '../services/debtService';
-import { LinearGradient } from 'expo-linear-gradient';
+import ModernGradient from '../components/ModernGradient';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +37,55 @@ export function NewDebt({ route, navigation }) {
   const [isCreditor, setIsCreditor] = useState(true);
 
   const selectedFriend = friend || selectedTarget;
+  
+  // Estilos que dependem de colors
+  const dynamicStyles = {
+    debtorButton: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SPACING.sm,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      elevation: 2,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      height: moderateScale(100),
+      width: '48%',
+    },
+    debtorButtonSelected: {
+      backgroundColor: colors.primary + '15',
+      borderColor: colors.primary + '40',
+      elevation: 4,
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+    },
+    debtorIcon: {
+      marginBottom: SPACING.sm,
+      width: moderateScale(50),
+      height: moderateScale(50),
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+      backgroundColor: colors.background,
+    },
+    debtorIconSelected: {
+      backgroundColor: colors.primary + '20',
+    },
+    debtorText: {
+      fontSize: moderateScale(16),
+      color: colors.text,
+      textAlign: 'center',
+    },
+    debtorTextSelected: {
+      fontWeight: 'bold',
+      color: colors.primary,
+    },
+  };
 
   const handleAmountChange = (text) => {
     // Remove any non-numeric characters
@@ -100,25 +149,17 @@ export function NewDebt({ route, navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={colors.statusBar} />
-        <SafeAreaView style={styles.safeArea}>
-          <LinearGradient
-            colors={[colors.primary + '30', colors.background]}
-            style={styles.headerGradient}
-          />
-          
-          <ScrollView 
-            style={styles.content} 
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            keyboardDismissMode="interactive"
-          >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ModernGradient />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.content, { paddingTop: Platform.OS === 'ios' ? moderateScale(20) : moderateScale(10) }]}>
             <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
               <View style={{ flex: 1 }}>
                 <View style={styles.header}>
@@ -179,15 +220,33 @@ export function NewDebt({ route, navigation }) {
                   </View>
                 </View>
 
-                <View style={[styles.formContainer, { backgroundColor: colors.surface, padding: SPACING.md, margin: SPACING.md}]}>
-                  <View style={[styles.inputSection, { padding: SPACING.md }]}>
+                <View style={[styles.formContainer, { 
+                  backgroundColor: colors.background, 
+                  padding: SPACING.md, 
+                  margin: SPACING.md
+                }]}>
+                  <View style={[styles.inputSection, { 
+                    padding: SPACING.md,
+                    borderRadius: moderateScale(12)
+                  }]}>
                     <Text style={[textStyles.subtitle, { color: colors.text, marginBottom: SPACING.md }]}>
                       Detalhes da Dívida
                     </Text>
 
                     <View style={styles.amountContainer}>
                       <Text style={[textStyles.caption, { color: colors.text2 }]}>Valor</Text>
-                      <View style={[styles.amountInputWrapper, { backgroundColor: colors.background }]}>
+                      <View style={[styles.amountInputWrapper, { 
+                        backgroundColor: colors.surface,
+                        borderRadius: moderateScale(12),
+                        padding: SPACING.md,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        shadowColor: colors.text,
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4,
+                        elevation: 2
+                      }]}>
                         <Text style={[textStyles.h2, { color: colors.text }]}>R$</Text>
                         <TextInput
                           style={[styles.amountInput, { color: colors.text }]}
@@ -204,8 +263,17 @@ export function NewDebt({ route, navigation }) {
                       <Text style={[textStyles.caption, { color: colors.text2 }]}>Descrição</Text>
                       <TextInput
                         style={[styles.descriptionInput, { 
-                          backgroundColor: colors.background,
+                          backgroundColor: colors.surface,
                           color: colors.text,
+                          borderRadius: moderateScale(12),
+                          padding: SPACING.md,
+                          height: moderateScale(80),
+                          textAlignVertical: 'top',
+                          shadowColor: colors.text,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.05,
+                          shadowRadius: 4,
+                          elevation: 2
                         }]}
                         value={description}
                         onChangeText={setDescription}
@@ -216,101 +284,87 @@ export function NewDebt({ route, navigation }) {
                     </View>
 
                     <View style={styles.debtorContainer}>
-                      <Text style={[textStyles.caption, { color: colors.text2, marginBottom: SPACING.sm }]}>
+                      <Text style={[textStyles.caption, { color: colors.text2, marginBottom: SPACING.xs }]}>
                         Quem vai pagar?
                       </Text>
-                      <View style={[styles.debtorSelector, { flexDirection: 'row', justifyContent: 'space-between' }]}>
+                      <View style={[styles.debtorSelector, { 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between',
+                        gap: SPACING.xs,
+                        paddingHorizontal: 0,
+                        marginBottom: SPACING.sm
+                      }]}>
                         <TouchableOpacity
                           style={[
-                            styles.debtorOption,
-                            { 
-                              backgroundColor: debtor === 'me' ? colors.primary : colors.background,
-                              opacity: forceDebtor ? 0.5 : 1,
-                              borderRadius: moderateScale(8),
-                              padding: SPACING.md,
-                              width: '48%',
-                            }
+                            dynamicStyles.debtorButton,
+                            debtor === 'me' && dynamicStyles.debtorButtonSelected
                           ]}
                           onPress={() => !forceDebtor && setDebtor('me')}
                           disabled={Boolean(forceDebtor)}
                         >
-                          <View style={[styles.debtorOptionContent, { alignItems: 'center' }]}>
-                            <View style={[
-                              styles.iconContainer,
-                              { 
-                                backgroundColor: debtor === 'me' ? colors.white : colors.background,
-                                padding: SPACING.sm,
-                                borderRadius: moderateScale(20),
-                                marginBottom: SPACING.sm
-                              }
-                            ]}>
-                              <Ionicons 
-                                name="arrow-up-outline" 
-                                size={24} 
-                                color={debtor === 'me' ? colors.primary : colors.text} 
-                              />
-                            </View>
-                            <Text style={[
-                              textStyles.bodyLarge,
-                              { 
-                                color: debtor === 'me' ? colors.white : colors.text,
-                                textAlign: 'center'
-                              }
-                            ]}>
-                              Eu vou pagar
-                            </Text>
+                          <View style={[
+                            dynamicStyles.debtorIcon,
+                            debtor === 'me' && dynamicStyles.debtorIconSelected
+                          ]}>
+                            <Ionicons 
+                              name="wallet-outline" 
+                              size={moderateScale(28)} 
+                              color={debtor === 'me' ? colors.primary : colors.text} 
+                            />
                           </View>
+                          <Text style={[
+                            dynamicStyles.debtorText,
+                            debtor === 'me' && dynamicStyles.debtorTextSelected
+                          ]}>
+                            Eu
+                          </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                           style={[
-                            styles.debtorOption,
-                            { 
-                              backgroundColor: debtor === 'other' ? colors.primary : colors.background,
-                              opacity: forceDebtor ? 0.5 : 1,
-                              borderRadius: moderateScale(8),
-                              padding: SPACING.md,
-                              width: '48%',
-                            }
+                            dynamicStyles.debtorButton,
+                            debtor === 'other' && dynamicStyles.debtorButtonSelected
                           ]}
                           onPress={() => !forceDebtor && setDebtor('other')}
                           disabled={Boolean(forceDebtor)}
                         >
-                          <View style={[styles.debtorOptionContent, { alignItems: 'center' }]}>
-                            <View style={[
-                              styles.iconContainer,
-                              { 
-                                backgroundColor: debtor === 'other' ? colors.white : colors.background,
-                                padding: SPACING.sm,
-                                borderRadius: moderateScale(20),
-                                marginBottom: SPACING.sm
-                              }
-                            ]}>
-                              <Ionicons 
-                                name="arrow-down-outline" 
-                                size={24} 
-                                color={debtor === 'other' ? colors.primary : colors.text} 
-                              />
-                            </View>
-                            <Text style={[
-                              textStyles.bodyLarge,
-                              { 
-                                color: debtor === 'other' ? colors.white : colors.text,
-                                textAlign: 'center'
-                              }
-                            ]}>
-                              {selectedFriend?.username || 'Outro'} vai pagar
-                            </Text>
+                          <View style={[
+                            dynamicStyles.debtorIcon,
+                            debtor === 'other' && dynamicStyles.debtorIconSelected
+                          ]}>
+                            <Ionicons 
+                              name="wallet-outline" 
+                              size={moderateScale(28)} 
+                              color={debtor === 'other' ? colors.primary : colors.text} 
+                            />
                           </View>
+                          <Text style={[
+                            dynamicStyles.debtorText,
+                            debtor === 'other' && dynamicStyles.debtorTextSelected
+                          ]}>
+                            {selectedFriend?.username || 'Outro'}
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   </View>
 
+                  <View style={[styles.divider, { 
+                    height: 1, 
+                    backgroundColor: colors.border, 
+                    marginVertical: SPACING.sm,
+                    marginHorizontal: SPACING.md
+                  }]} />
+
                   <TouchableOpacity
                     style={[
                       styles.submitButton,
-                      { backgroundColor: colors.primary },
+                      { 
+                        backgroundColor: colors.primary,
+                        paddingVertical: SPACING.md,
+                        marginHorizontal: SPACING.md,
+                        marginBottom: SPACING.sm
+                      },
                       loading && styles.submitButtonDisabled
                     ]}
                     onPress={handleSubmit}
@@ -323,10 +377,10 @@ export function NewDebt({ route, navigation }) {
                 </View>
               </View>
             </TouchableWithoutFeedback>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
-    </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -334,15 +388,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  keyboardAvoid: {
     flex: 1,
   },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: moderateScale(220),
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
@@ -378,7 +428,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
   },
   inputSection: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   amountContainer: {
     marginBottom: SPACING.md,
@@ -407,17 +457,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   debtorContainer: {
-    marginBottom: 0,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
   },
   debtorSelector: {
     gap: SPACING.md,
-  },
-  debtorOption: {
-    padding: SPACING.md,
-    borderRadius: moderateScale(12),
-  },
-  debtorOptionContent: {
-    alignItems: 'center',
   },
   submitButton: {
     padding: SPACING.md,
@@ -435,9 +480,5 @@ const styles = StyleSheet.create({
     height: moderateScale(40),
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  iconContainer: {
-    padding: SPACING.sm,
-    borderRadius: moderateScale(20),
   },
 }); 
