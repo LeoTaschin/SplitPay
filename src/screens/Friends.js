@@ -404,7 +404,11 @@ export function Friends() {
                   />
                 )}
               </View>
-              <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
+              <Text 
+                style={[textStyles.bodySmall, { color: colors.text2 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {friend.email}
               </Text>
             </View>
@@ -442,7 +446,11 @@ export function Friends() {
             {item.username}
           </Text>
         </View>
-        <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
+        <Text 
+          style={[textStyles.bodySmall, { color: colors.text2 }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {item.email}
         </Text>
       </View>
@@ -492,33 +500,35 @@ export function Friends() {
       {loadingFriends ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
-        <FlatList
-          data={friends}
-          renderItem={renderFriendItem}
-          keyExtractor={item => item.id}
+        <ScrollView
           contentContainerStyle={styles.listContent}
-          ListFooterComponent={
-            <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                onPress={() => setIsSearchModalVisible(true)}
-                style={[styles.addButton, { borderColor: colors.primary }]}
-              >
-                <Ionicons name="person-add" size={20} color={colors.primary} />
-                <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
-                  Adicionar Amigo
-                </Text>
-              </TouchableOpacity>
-            </View>
-          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={colors.primary}
               colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
-        />
+          showsVerticalScrollIndicator={false}
+        >
+          {friends.map((friend, index) => (
+            <React.Fragment key={friend.id || index}>
+              {renderFriendItem({ item: friend, index })}
+            </React.Fragment>
+          ))}
+          <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              onPress={() => setIsSearchModalVisible(true)}
+              style={[styles.addButton, { borderColor: colors.primary }]}
+            >
+              <Ionicons name="person-add" size={20} color={colors.primary} />
+              <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
+                Adicionar Amigo
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       )}
 
       <Modal
@@ -605,13 +615,12 @@ export function Friends() {
                       </Text>
                     </View>
                   ) : searchResults ? (
-                    <FlatList
-                      data={searchResults}
-                      renderItem={renderSearchResult}
-                      keyExtractor={item => item.id}
+                    <ScrollView
                       contentContainerStyle={styles.searchResultsList}
                       showsVerticalScrollIndicator={false}
-                    />
+                    >
+                      {searchResults.map((item) => renderSearchResult({ item }))}
+                    </ScrollView>
                   ) : null}
                 </Animated.View>
               </View>
@@ -690,7 +699,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   friendsList: {
-    flexGrow: 1,
+    flex: 1,
   },
   friendItem: {
     flexDirection: 'row',
@@ -941,5 +950,26 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  customScrollContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollIndicatorContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    zIndex: 10,
+  },
+  scrollIndicator: {
+    position: 'absolute',
+    width: '100%',
+    borderRadius: 1,
+    height: 40,
   },
 }); 

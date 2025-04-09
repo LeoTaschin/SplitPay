@@ -2,47 +2,93 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Função auxiliar para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
     // Função auxiliar para verificar se o usuário está criando seu próprio documento
     function isCreatingOwnDocument(userId) {
-      return request.auth != null && request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Função auxiliar para verificar se o usuário está acessando seu próprio documento
+    function isAccessingOwnDocument(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Função auxiliar para verificar se o usuário é amigo do documento que está acessando
+    function isFriend(userId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(userId));
     }
 
     // Regras para a coleção users
     match /users/{userId} {
       // Permitir leitura para usuários autenticados
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
+      
       // Permitir criação se o ID do documento corresponder ao ID do usuário
       allow create: if isCreatingOwnDocument(userId);
+      
       // Permitir atualização/exclusão apenas pelo próprio usuário
-      allow update, delete: if isCreatingOwnDocument(userId);
+      allow update, delete: if isAccessingOwnDocument(userId);
+      
+      // Regras para subcoleções de usuários
+      match /friends/{friendId} {
+        allow read: if isAccessingOwnDocument(userId);
+        allow write: if isAccessingOwnDocument(userId);
+      }
     }
 
     // Regras para a coleção usernames
     match /usernames/{username} {
       // Permitir leitura para todos (necessário para verificar disponibilidade)
       allow read: if true;
+      
       // Permitir criação se o UID no documento corresponder ao UID do usuário autenticado
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      
       // Não permitir atualização/exclusão
       allow update, delete: if false;
+    }
+    
+    // Regras para a coleção debts
+    match /debts/{debtId} {
+      // Permitir leitura apenas para o credor ou devedor
+      allow read: if isAuthenticated() && 
+        (resource.data.creditorId == request.auth.uid || 
+         resource.data.debtorId == request.auth.uid);
+      
+      // Permitir criação apenas se o usuário for o credor
+      allow create: if isAuthenticated() && 
+        request.resource.data.creditorId == request.auth.uid;
+      
+      // Permitir atualização apenas para o credor ou devedor
+      allow update: if isAuthenticated() && 
+        (resource.data.creditorId == request.auth.uid || 
+         resource.data.debtorId == request.auth.uid);
+      
+      // Não permitir exclusão
+      allow delete: if false;
     }
 
     // Regras para a coleção de uploads
     match /uploads/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     // Regras para imagens de perfil
     match /profile_images/{imageId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAuthenticated();
     }
 
     // Regras para outras coleções
     match /{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 } 

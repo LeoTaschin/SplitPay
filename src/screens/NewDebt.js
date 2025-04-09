@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { useDebts } from '../hooks/useDebts';
 import { createDebt } from '../services/debtService';
 import ModernGradient from '../components/ModernGradient';
@@ -35,9 +35,28 @@ export function NewDebt({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [debtor, setDebtor] = useState(forceDebtor || 'other');
   const [isCreditor, setIsCreditor] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const selectedFriend = friend || selectedTarget;
   
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setCurrentUser(userDoc.data());
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
+
   // Estilos que dependem de colors
   const dynamicStyles = {
     debtorButton: {
@@ -150,7 +169,7 @@ export function NewDebt({ route, navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ModernGradient />
+      <ModernGradient fullScreen />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
@@ -176,7 +195,7 @@ export function NewDebt({ route, navigation }) {
                     <Ionicons name="close-sharp" size={24} color={colors.text} />
                   </TouchableOpacity>
                   
-                  <View style={[styles.profileSection, { marginTop: moderateScale(40) }]}>
+                  <View style={[styles.profileSection, { marginTop: moderateScale(20) }]}>
                     <Image
                       source={{ uri: selectedFriend?.photoURL || 'https://via.placeholder.com/150' }}
                       style={[styles.profileImage, { borderColor: colors.primary }]}
@@ -229,10 +248,6 @@ export function NewDebt({ route, navigation }) {
                     padding: SPACING.md,
                     borderRadius: moderateScale(12)
                   }]}>
-                    <Text style={[textStyles.subtitle, { color: colors.text, marginBottom: SPACING.md }]}>
-                      Detalhes da Dívida
-                    </Text>
-
                     <View style={styles.amountContainer}>
                       <Text style={[textStyles.caption, { color: colors.text2 }]}>Valor</Text>
                       <View style={[styles.amountInputWrapper, { 
@@ -316,7 +331,7 @@ export function NewDebt({ route, navigation }) {
                             dynamicStyles.debtorText,
                             debtor === 'me' && dynamicStyles.debtorTextSelected
                           ]}>
-                            Eu
+                            {currentUser?.username || 'Você'}
                           </Text>
                         </TouchableOpacity>
 
@@ -406,9 +421,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileImage: {
-    width: moderateScale(100),
-    height: moderateScale(100),
-    borderRadius: moderateScale(50),
+    width: moderateScale(80),
+    height: moderateScale(80),
+    borderRadius: moderateScale(40),
     borderWidth: moderateScale(2),
   },
   nameSection: {
@@ -423,7 +438,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.xs,
   },
   formContainer: {
-    marginTop: SPACING.xl,
+    marginTop: SPACING.md,
     padding: SPACING.lg,
     borderRadius: moderateScale(16),
   },
