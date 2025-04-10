@@ -29,7 +29,8 @@ import {
   updateDoc, 
   arrayUnion, 
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  arrayRemove
 } from 'firebase/firestore';
 import { formatCurrency } from '../utils/formatters';
 
@@ -212,10 +213,86 @@ export function Groups() {
     <View style={[styles.separator, { backgroundColor: colors.border }]} />
   );
 
+  // Nova função para remover o usuário de todos os grupos
+  const removeFromAllGroups = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Erro', 'Você precisa estar logado para executar esta ação');
+        return;
+      }
+
+      Alert.alert(
+        'Confirmar Remoção',
+        'Você tem certeza que deseja sair de todos os grupos? Esta ação não pode ser desfeita.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel'
+          },
+          {
+            text: 'Confirmar',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                setLoading(true);
+                
+                // Buscar o documento do usuário
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                if (!userDoc.exists() || !userDoc.data().groups) {
+                  setLoading(false);
+                  return;
+                }
+                
+                const userGroups = userDoc.data().groups;
+                
+                // Para cada grupo, remover o usuário da lista de membros
+                for (const groupId of userGroups) {
+                  try {
+                    const groupRef = doc(db, 'groups', groupId);
+                    await updateDoc(groupRef, {
+                      members: arrayRemove(currentUser.uid)
+                    });
+                  } catch (err) {
+                    console.error(`Erro ao remover usuário do grupo ${groupId}:`, err);
+                  }
+                }
+                
+                // Limpar a lista de grupos do usuário
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                  groups: []
+                });
+                
+                setGroups([]);
+                setLoading(false);
+                Alert.alert('Sucesso', 'Você foi removido de todos os grupos.');
+              } catch (error) {
+                console.error('Erro ao remover dos grupos:', error);
+                setLoading(false);
+                Alert.alert('Erro', 'Não foi possível remover você dos grupos. Tente novamente.');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Erro ao processar a remoção:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao tentar processar sua solicitação.');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[textStyles.h2, { color: colors.text }]}>Grupos</Text>
+        {groups.length > 0 && (
+          <TouchableOpacity 
+            onPress={removeFromAllGroups}
+            style={[styles.removeButton, { borderColor: colors.error }]}
+          >
+            <Text style={{ color: colors.error }}>Limpar Grupos</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -494,5 +571,11 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     borderWidth: 1,
     borderColor: 'transparent',
+  },
+  removeButton: {
+    padding: SPACING.xs,
+    borderRadius: moderateScale(8),
+    borderWidth: 1,
+    marginLeft: SPACING.md
   },
 }); 
