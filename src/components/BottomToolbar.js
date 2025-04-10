@@ -77,7 +77,7 @@ export function BottomToolbar({ activeTab, onTabChange }) {
                     <Ionicons 
                       name={item.icon}
                       size={38} 
-                      color={colors.white}
+                      color={colors.background}
                     />
                   </View>
                 </View>

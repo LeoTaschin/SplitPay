@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,20 @@ import {
   RefreshControl,
   Modal,
   TextInput,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Animated,
+  ActionSheetIOS,
+  Alert as RNAlert
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useNavigation } from '@react-navigation/native';
-import { db, auth } from '../config/firebase';
+import { db, auth, storage } from '../config/firebase';
 import { 
   collection, 
   query, 
@@ -33,6 +40,1379 @@ import {
   arrayRemove
 } from 'firebase/firestore';
 import { formatCurrency } from '../utils/formatters';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+
+const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
+  const { colors, textStyles } = useTheme();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [groupName, setGroupName] = useState('');
+  const [groupPhotoURL, setGroupPhotoURL] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
+  const [selectedFriends, setSelectedFriends] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchUsername, setSearchUsername] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [slideAnim] = useState(new Animated.Value(0));
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [localImageUri, setLocalImageUri] = useState(null);
+  const [progressAnim] = useState(new Animated.Value(0.05));
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [groupCreated, setGroupCreated] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      fetchFriends();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      setCurrentStep(1);
+      progressAnim.setValue(0.05);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (visible && currentStep === 1) {
+      fetchFriends();
+    }
+  }, [visible, currentStep]);
+
+  useEffect(() => {
+    if (currentStep === 2) {
+      Animated.timing(progressAnim, {
+        toValue: 0.5,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+    } else if (currentStep === 3) {
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [currentStep]);
+
+  const fetchFriends = async () => {
+    try {
+      setLoading(true);
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setFriends([]);
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (!userDoc.exists()) {
+        setFriends([]);
+        return;
+      }
+
+      const userData = userDoc.data();
+      
+      if (!userData?.friends?.length) {
+        setFriends([]);
+        return;
+      }
+
+      const friendsData = [];
+      for (const friendId of userData.friends) {
+        const friendDoc = await getDoc(doc(db, 'users', friendId));
+        if (friendDoc.exists()) {
+          const friendData = friendDoc.data();
+          friendsData.push({
+            id: friendDoc.id,
+            ...friendData,
+            photoURL: friendData.photoURL || null,
+            username: friendData.username || friendData.email?.split('@')[0] || 'Usuário',
+            email: friendData.email || ''
+          });
+        }
+      }
+
+      setFriends(friendsData);
+    } catch (error) {
+      console.error('Erro ao buscar amigos:', error);
+      setFriends([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchUser = async (username) => {
+    setSearchLoading(true);
+    setSearchError('');
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setSearchError('Você precisa estar logado');
+        return;
+      }
+
+      const searchTerm = username.trim().toLowerCase();
+      
+      const foundFriends = friends.filter(friend => 
+        friend.username?.toLowerCase().includes(searchTerm) &&
+        !selectedFriends.some(f => f.id === friend.id)
+      );
+
+      if (foundFriends.length === 0) {
+        setSearchResults(null);
+        setSearchError('Nenhum amigo encontrado');
+        return;
+      }
+
+      setSearchResults(foundFriends);
+    } catch (error) {
+      console.error('Erro ao buscar amigos:', error);
+      setSearchError('Erro ao buscar amigos');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const toggleFriendSelection = (friend) => {
+    if (selectedFriends.some(f => f.id === friend.id)) {
+      setSelectedFriends(selectedFriends.filter(f => f.id !== friend.id));
+    } else {
+      setSelectedFriends([...selectedFriends, friend]);
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      // Solicitar permissão para acessar a galeria
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permissão necessária',
+          'Precisamos de permissão para acessar suas fotos para selecionar uma imagem para o grupo.'
+        );
+        return;
+      }
+      
+      // Abrir o seletor de imagens
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setLocalImageUri(result.assets[0].uri);
+        setGroupPhotoURL(''); // Limpar a URL anterior
+      }
+    } catch (error) {
+      console.error('Erro ao selecionar imagem:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar a imagem. Tente novamente.');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      // Solicitar permissão para acessar a câmera
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permissão necessária',
+          'Precisamos de permissão para acessar sua câmera para tirar uma foto para o grupo.'
+        );
+        return;
+      }
+      
+      // Abrir a câmera
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setLocalImageUri(result.assets[0].uri);
+        setGroupPhotoURL(''); // Limpar a URL anterior
+      }
+    } catch (error) {
+      console.error('Erro ao tirar foto:', error);
+      Alert.alert('Erro', 'Não foi possível tirar a foto. Tente novamente.');
+    }
+  };
+
+  const showImageOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Escolher da galeria', 'Tirar foto'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            pickImage();
+          } else if (buttonIndex === 2) {
+            takePhoto();
+          }
+        }
+      );
+    } else {
+      RNAlert.alert(
+        'Adicionar foto',
+        'Escolha uma opção',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Escolher da galeria',
+            onPress: pickImage,
+          },
+          {
+            text: 'Tirar foto',
+            onPress: takePhoto,
+          },
+        ]
+      );
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!localImageUri) return null;
+    
+    try {
+      setUploadingImage(true);
+      
+      // Gerar um nome único para o arquivo
+      const fileExtension = localImageUri.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExtension}`;
+      
+      // Criar uma referência para o arquivo no Storage
+      const storageRef = ref(storage, `group_photos/${fileName}`);
+      
+      // Converter a URI local para um blob
+      const response = await fetch(localImageUri);
+      const blob = await response.blob();
+      
+      // Fazer upload do blob para o Storage
+      await uploadBytes(storageRef, blob);
+      
+      // Obter a URL de download
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      setUploadingImage(false);
+      return downloadURL;
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      setUploadingImage(false);
+      Alert.alert('Erro', 'Não foi possível fazer upload da imagem. Tente novamente.');
+      return null;
+    }
+  };
+
+  const createGroup = async () => {
+    try {
+      if (!groupName.trim()) {
+        Alert.alert('Erro', 'O nome do grupo não pode estar vazio');
+        return;
+      }
+      
+      if (selectedFriends.length === 0) {
+        Alert.alert('Erro', 'Você precisa adicionar pelo menos um amigo ao grupo');
+        return;
+      }
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Erro', 'Você precisa estar logado para criar um grupo');
+        return;
+      }
+      
+      setLoading(true);
+      
+      // Fazer upload da imagem se houver uma selecionada
+      let photoURL = groupPhotoURL;
+      if (localImageUri) {
+        photoURL = await uploadImage();
+      }
+      
+      // Se não houver foto selecionada ou URL, usar uma imagem padrão com a inicial do grupo
+      if (!photoURL) {
+        photoURL = 'https://via.placeholder.com/150?text=' + encodeURIComponent(groupName.trim().charAt(0).toUpperCase());
+      }
+      
+      const newGroup = {
+        name: groupName.trim(),
+        photoURL: photoURL,
+        description: groupDescription.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+        admin: currentUser.uid,
+        members: [currentUser.uid, ...selectedFriends.map(f => f.id)],
+        debts: []
+      };
+      
+      const groupRef = await addDoc(collection(db, 'groups'), newGroup);
+      
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        groups: arrayUnion(groupRef.id)
+      });
+      
+      for (const friend of selectedFriends) {
+        await updateDoc(doc(db, 'users', friend.id), {
+          groups: arrayUnion(groupRef.id)
+        });
+      }
+      
+      setGroupCreated(true);
+      setCurrentStep(3);
+      
+      if (onGroupCreated) {
+        onGroupCreated();
+      }
+      
+    } catch (error) {
+      console.error('Erro ao criar grupo:', error);
+      Alert.alert('Erro', 'Não foi possível criar o grupo. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderStepIndicator = () => (
+    <View style={modalStyles.stepIndicatorContainer}>
+      <View style={modalStyles.progressBarContainer}>
+        <Animated.View 
+          style={[
+            modalStyles.progressBar,
+            { 
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%']
+              }),
+              backgroundColor: colors.primary
+            }
+          ]} 
+        />
+      </View>
+    </View>
+  );
+
+  const renderStep1 = () => (
+    <View style={[modalStyles.modalContent, { flex: 1 }]}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[modalStyles.photoAndNameContainer, { 
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: moderateScale(12),
+          padding: SPACING.md,
+          marginBottom: SPACING.md
+        }]}>
+          <TouchableOpacity
+            style={[modalStyles.photoIconButton, { backgroundColor: colors.primary + '30' }]}
+            onPress={showImageOptions}
+          >
+            {localImageUri ? (
+              <Image 
+                source={{ uri: localImageUri }} 
+                style={modalStyles.groupPhotoPreview}
+              />
+            ) : (
+              <Ionicons name="camera" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+          <TextInput
+            style={[modalStyles.searchInput, { 
+              backgroundColor: 'transparent',
+              color: colors.text,
+              borderColor: 'transparent',
+              flex: 1,
+              marginLeft: SPACING.sm,
+              minHeight: moderateScale(50),
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.md,
+              fontSize: moderateScale(16),
+              textAlignVertical: 'center'
+            }]}
+            placeholder="Nome do grupo"
+            placeholderTextColor={colors.text2}
+            value={groupName}
+            onChangeText={setGroupName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            multiline={false}
+          />
+        </View>
+
+        <View style={[modalStyles.participantsContainer, { 
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: moderateScale(12),
+          padding: SPACING.md,
+          marginTop: SPACING.md,
+          maxHeight: isExpanded ? undefined : moderateScale(300),
+        }]}>
+          <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
+            Participantes
+          </Text>
+          <ScrollView 
+            style={{ maxHeight: isExpanded ? undefined : moderateScale(250) }}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={{ paddingBottom: SPACING.md }}
+          >
+            <View style={[modalStyles.participantsList, { 
+              flexDirection: 'row', 
+              flexWrap: 'wrap',
+              justifyContent: 'flex-start',
+              alignItems: 'flex-start',
+              paddingHorizontal: SPACING.sm,
+              paddingVertical: SPACING.sm,
+              gap: SPACING.md,
+              maxHeight: isExpanded ? undefined : moderateScale(100),
+              overflow: 'hidden',
+            }]}>
+              {selectedFriends.map((friend) => (
+                <View key={friend.id} style={[modalStyles.participantItem, { 
+                  width: '20%',
+                  alignItems: 'flex-start',
+                  marginBottom: SPACING.md,
+                }]}>
+                  <View style={{ position: 'relative' }}>
+                    <Image
+                      source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                      style={[modalStyles.participantPhoto, {
+                        width: moderateScale(50),
+                        height: moderateScale(50),
+                        borderRadius: moderateScale(25),
+                      }]}
+                    />
+                    <TouchableOpacity
+                      style={[modalStyles.removeButton, {
+                        position: 'absolute',
+                        top: -5,
+                        right: -5,
+                        backgroundColor: colors.background,
+                        borderRadius: moderateScale(12),
+                      }]}
+                      onPress={() => toggleFriendSelection(friend)}
+                    >
+                      <Ionicons name="close-circle" size={20} color={colors.text2} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text 
+                    style={[textStyles.bodySmall, { 
+                      color: colors.text,
+                      marginTop: SPACING.xs,
+                      textAlign: 'center'
+                    }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {friend.username || friend.email}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+          {selectedFriends.length > 4 && (
+            <TouchableOpacity
+              style={[modalStyles.expandButton, {
+                backgroundColor: 'transparent',
+                paddingVertical: SPACING.sm,
+                alignItems: 'center',
+                marginTop: SPACING.sm,
+              }]}
+              onPress={() => setIsExpanded(!isExpanded)}
+            >
+              <Text style={[textStyles.body, { 
+                color: colors.primary,
+                textAlign: 'center',
+              }]}>
+                {isExpanded ? 'Ver menos' : `Ver mais (${selectedFriends.length} participantes)`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={[modalStyles.buttonContainer, { 
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: SPACING.md,
+          marginTop: 'auto',
+          paddingHorizontal: SPACING.md,
+          paddingBottom: SPACING.xl,
+          paddingTop: SPACING.xl,
+        }]}>
+          <TouchableOpacity
+            style={[modalStyles.button, { 
+              backgroundColor: colors.primary,
+              opacity: groupName.trim() ? 1 : 0.5,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: SPACING.xs,
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.xl,
+              borderRadius: moderateScale(20),
+              elevation: 3,
+              shadowColor: colors.primary,
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3,
+              width: '100%',
+            }]}
+            onPress={createGroup}
+            disabled={!groupName.trim()}
+            activeOpacity={0.7}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.background} />
+            ) : (
+              <Text style={[textStyles.button, { 
+                color: colors.background,
+                fontSize: moderateScale(15),
+                fontWeight: '600',
+                letterSpacing: 0.5,
+              }]}>Criar Grupo</Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[modalStyles.button, { 
+              backgroundColor: 'transparent',
+              paddingVertical: SPACING.sm,
+              width: '100%',
+            }]}
+            onPress={() => setCurrentStep(1)}
+            activeOpacity={0.7}
+          >
+            <Text style={[textStyles.body, { 
+              color: colors.text2,
+              textAlign: 'center',
+            }]}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
+  const renderStep2 = () => (
+    <View style={modalStyles.modalContent}>
+      <View style={modalStyles.searchContainer}>
+        <TextInput
+          style={[modalStyles.searchInput, { 
+            backgroundColor: colors.card,
+            color: colors.text,
+            borderColor: colors.border,
+          }]}
+          placeholder="Buscar amigo..."
+          placeholderTextColor={colors.text2}
+          value={searchUsername}
+          onChangeText={(text) => {
+            setSearchUsername(text);
+            if (text.trim()) {
+              searchUser(text);
+            } else {
+              setSearchResults(null);
+              setSearchError('');
+            }
+          }}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+
+      {searchLoading ? (
+        <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : searchError ? (
+        <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+          <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+            {searchError}
+          </Text>
+        </View>
+      ) : searchResults ? (
+        <View style={modalStyles.searchResultsContainer}>
+          <ScrollView
+            contentContainerStyle={modalStyles.searchResultsList}
+            showsVerticalScrollIndicator={true}
+            bounces={false}
+          >
+            {searchResults.map((item) => (
+              <View key={item.id || `search-${item.username}`}>
+                {renderSearchResult({ item })}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      ) : (
+        <View style={modalStyles.friendsListContainer}>
+          <ScrollView
+            contentContainerStyle={modalStyles.friendsList}
+            showsVerticalScrollIndicator={true}
+            bounces={false}
+          >
+            {loading ? (
+              <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : friends.length > 0 ? (
+              friends.map((friend) => (
+                <TouchableOpacity
+                  key={friend.id}
+                  style={[
+                    modalStyles.friendItem, 
+                    { 
+                      backgroundColor: colors.cardBackground,
+                      borderColor: selectedFriends.some(f => f.id === friend.id) ? colors.primary : 'transparent',
+                      borderWidth: selectedFriends.some(f => f.id === friend.id) ? 2 : 0
+                    }
+                  ]}
+                  onPress={() => toggleFriendSelection(friend)}
+                >
+                  <View style={modalStyles.friendInfo}>
+                    <View style={styles.photoContainer}>
+                      <Image
+                        source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                        style={modalStyles.friendPhoto}
+                      />
+                    </View>
+                    <View style={modalStyles.friendTextContainer}>
+                      <View style={modalStyles.nameContainer}>
+                        <Text style={[textStyles.body, { color: colors.text }]}>
+                          {friend.username || friend.email}
+                        </Text>
+                        {friend.isVerified && (
+                          <Ionicons 
+                            name="checkmark-circle" 
+                            size={16} 
+                            color={colors.primary} 
+                            style={modalStyles.verifiedIcon}
+                          />
+                        )}
+                      </View>
+                      <Text 
+                        style={[textStyles.bodySmall, { color: colors.text2 }]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {friend.email}
+                      </Text>
+                    </View>
+                  </View>
+                  {selectedFriends.some(f => f.id === friend.id) && (
+                    <View style={[styles.checkmarkContainer, { 
+                      backgroundColor: colors.primary,
+                      width: moderateScale(24),
+                      height: moderateScale(24),
+                      borderRadius: moderateScale(12),
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      elevation: 3,
+                      shadowColor: colors.primary,
+                      shadowOffset: {
+                        width: 0,
+                        height: 2,
+                      },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 3,
+                    }]}>
+                      <Ionicons name="checkmark" size={16} color={colors.background} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={[modalStyles.emptyStateContainer, { height: moderateScale(320) }]}>
+                <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+                  Você não tem amigos adicionados ainda.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      <View style={modalStyles.buttonContainer}>
+        <TouchableOpacity
+          style={[modalStyles.button, { 
+            backgroundColor: colors.primary,
+            opacity: selectedFriends.length > 0 ? 1 : 0.5,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.xs,
+            paddingVertical: SPACING.md,
+            paddingHorizontal: SPACING.xl,
+            borderRadius: moderateScale(20),
+            elevation: 3,
+            shadowColor: colors.primary,
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3,
+            alignSelf: 'center',
+            width: '100%',
+          }]}
+          onPress={() => setCurrentStep(2)}
+          disabled={selectedFriends.length === 0}
+          activeOpacity={0.7}
+        >
+          <Text style={[textStyles.button, { 
+            color: colors.background,
+            fontSize: moderateScale(15),
+            fontWeight: '600',
+            letterSpacing: 0.5,
+          }]}>Próximo</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderStep3 = () => (
+    <View style={[modalStyles.modalContent, { flex: 1 }]}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[modalStyles.groupDetailsContainer, { 
+          alignItems: 'center',
+          padding: SPACING.md,
+        }]}>
+          <View style={[modalStyles.groupPhotoLarge, { 
+            width: moderateScale(120),
+            height: moderateScale(120),
+            borderRadius: moderateScale(60),
+            overflow: 'hidden',
+            marginBottom: SPACING.md,
+            borderWidth: 3,
+            borderColor: colors.primary,
+          }]}>
+            {localImageUri ? (
+              <Image 
+                source={{ uri: localImageUri }} 
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <View style={{ 
+                width: '100%', 
+                height: '100%', 
+                backgroundColor: colors.primary + '30',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <Ionicons name="people" size={50} color={colors.primary} />
+              </View>
+            )}
+          </View>
+          
+          <Text style={[textStyles.h3, { 
+            color: colors.text,
+            marginBottom: SPACING.xs,
+            textAlign: 'center',
+          }]}>
+            {groupName || 'Novo Grupo'}
+          </Text>
+          
+          <Text style={[textStyles.bodySmall, { 
+            color: colors.text2,
+            marginBottom: SPACING.md,
+            textAlign: 'center',
+          }]}>
+            Criado em {new Date().toLocaleDateString()}
+          </Text>
+          
+          <View style={[modalStyles.participantsCountContainer, { 
+            backgroundColor: colors.primary + '20',
+            paddingVertical: SPACING.sm,
+            paddingHorizontal: SPACING.md,
+            borderRadius: moderateScale(20),
+            marginBottom: SPACING.lg,
+          }]}>
+            <Text style={[textStyles.body, { 
+              color: colors.primary,
+              fontWeight: '600',
+            }]}>
+              {selectedFriends.length + 1} Participantes
+            </Text>
+          </View>
+          
+          <View style={[modalStyles.participantsSection, {
+            width: '100%',
+            marginBottom: SPACING.lg,
+          }]}>
+            <Text style={[textStyles.body, { 
+              color: colors.text,
+              fontWeight: '600',
+              marginBottom: SPACING.md,
+              textAlign: 'center',
+            }]}>
+              Participantes do Grupo
+            </Text>
+            
+            <View style={[modalStyles.adminContainer, {
+              width: '100%',
+              backgroundColor: colors.card,
+              borderRadius: moderateScale(12),
+              padding: SPACING.md,
+              marginBottom: SPACING.md,
+              borderWidth: 1,
+              borderColor: colors.primary + '40',
+            }]}>
+              <View style={[modalStyles.adminHeader, {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: SPACING.sm,
+              }]}>
+                <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+                <Text style={[textStyles.bodySmall, { 
+                  color: colors.primary,
+                  fontWeight: '600',
+                  marginLeft: SPACING.xs,
+                }]}>
+                  Administrador
+                </Text>
+              </View>
+              
+              <View style={[modalStyles.participantItemLarge, { 
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+              }]}>
+                <View style={[modalStyles.participantPhotoLarge, {
+                  width: moderateScale(50),
+                  height: moderateScale(50),
+                  borderRadius: moderateScale(25),
+                  marginBottom: 0,
+                  marginRight: SPACING.md,
+                  borderWidth: 2,
+                  borderColor: colors.primary,
+                }]}>
+                  <Image
+                    source={{ uri: auth.currentUser?.photoURL || 'https://via.placeholder.com/70' }}
+                    style={{ width: '100%', height: '100%', borderRadius: moderateScale(25) }}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[textStyles.body, { 
+                    color: colors.text,
+                    fontWeight: '600',
+                  }]}>
+                    Você
+                  </Text>
+                  <Text style={[textStyles.bodySmall, { 
+                    color: colors.text2,
+                    fontSize: moderateScale(12),
+                  }]}>
+                    {auth.currentUser?.email || 'Usuário'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            
+            <View style={[modalStyles.membersContainer, {
+              width: '100%',
+              backgroundColor: colors.card,
+              borderRadius: moderateScale(12),
+              padding: SPACING.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }]}>
+              <View style={[modalStyles.membersHeader, {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: SPACING.sm,
+              }]}>
+                <Ionicons name="people" size={18} color={colors.text} />
+                <Text style={[textStyles.bodySmall, { 
+                  color: colors.text,
+                  fontWeight: '600',
+                  marginLeft: SPACING.xs,
+                }]}>
+                  Membros ({selectedFriends.length})
+                </Text>
+              </View>
+              
+              {selectedFriends.map((friend) => (
+                <View key={friend.id} style={[modalStyles.participantItemLarge, { 
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  width: '100%',
+                  marginBottom: SPACING.sm,
+                }]}>
+                  <View style={[modalStyles.participantPhotoLarge, {
+                    width: moderateScale(50),
+                    height: moderateScale(50),
+                    borderRadius: moderateScale(25),
+                    marginBottom: 0,
+                    marginRight: SPACING.md,
+                  }]}>
+                    <Image
+                      source={{ uri: friend.photoURL || 'https://via.placeholder.com/70' }}
+                      style={{ width: '100%', height: '100%', borderRadius: moderateScale(25) }}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[textStyles.body, { 
+                      color: colors.text,
+                      fontWeight: '600',
+                    }]}>
+                      {friend.username || friend.email?.split('@')[0] || 'Usuário'}
+                    </Text>
+                    <Text style={[textStyles.bodySmall, { 
+                      color: colors.text2,
+                      fontSize: moderateScale(12),
+                    }]}>
+                      {friend.email || 'Membro do grupo'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={[modalStyles.buttonContainer, { 
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: SPACING.md,
+          marginTop: 'auto',
+          paddingHorizontal: SPACING.md,
+          paddingBottom: SPACING.xl,
+          paddingTop: SPACING.xl,
+        }]}>
+          <TouchableOpacity
+            style={[modalStyles.button, { 
+              backgroundColor: colors.primary,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: SPACING.xs,
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.xl,
+              borderRadius: moderateScale(20),
+              elevation: 3,
+              shadowColor: colors.primary,
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3,
+              width: '100%',
+            }]}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <Text style={[textStyles.button, { 
+              color: colors.background,
+              fontSize: moderateScale(15),
+              fontWeight: '600',
+              letterSpacing: 0.5,
+            }]}>Concluir</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
+  const renderSearchResult = ({ item }) => (
+    <View style={[modalStyles.searchResultItem, { backgroundColor: colors.card }]}>
+      <Image 
+        source={{ uri: item.photoURL || 'https://via.placeholder.com/50' }} 
+        style={modalStyles.friendPhoto}
+        defaultSource={require('../assets/images/logoPequena.png')}
+      />
+      <View style={modalStyles.searchResultInfo}>
+        <View style={modalStyles.nameContainer}>
+          <Text style={[textStyles.bodyLarge, { color: colors.text }]}>
+            {item.username}
+          </Text>
+        </View>
+        <Text 
+          style={[textStyles.bodySmall, { color: colors.text2 }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.email}
+        </Text>
+      </View>
+      <TouchableOpacity 
+        style={[modalStyles.addFriendButton, { backgroundColor: colors.primary }]}
+        onPress={() => toggleFriendSelection(item)}
+      >
+        <Ionicons 
+          name={selectedFriends.some(f => f.id === item.id) ? "checkmark" : "person-add"} 
+          size={20} 
+          color={colors.white} 
+        />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Definindo os estilos dentro do componente para ter acesso ao colors
+  const modalStyles = StyleSheet.create({
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: moderateScale(24),
+      borderTopRightRadius: moderateScale(24),
+      paddingTop: moderateScale(16),
+      paddingBottom: moderateScale(32),
+      height: '85%',
+    width: '100%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: moderateScale(16),
+      paddingBottom: moderateScale(16),
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    closeButton: {
+      padding: moderateScale(8),
+      width: moderateScale(40),
+      height: moderateScale(40),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalScrollContent: {
+      paddingHorizontal: moderateScale(16),
+      paddingTop: moderateScale(16),
+    },
+    stepIndicatorContainer: {
+      paddingHorizontal: moderateScale(16),
+      paddingVertical: moderateScale(16),
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    progressBarContainer: {
+      height: moderateScale(4),
+      backgroundColor: colors.border,
+      borderRadius: moderateScale(2),
+      overflow: 'hidden',
+    },
+    progressBar: {
+      height: '100%',
+      borderRadius: moderateScale(2),
+    },
+    searchContainer: {
+      marginBottom: moderateScale(16),
+    },
+    searchInput: {
+      backgroundColor: colors.card,
+      borderRadius: moderateScale(12),
+      paddingHorizontal: moderateScale(16),
+      paddingVertical: moderateScale(12),
+      borderWidth: 1,
+      borderColor: colors.border,
+      color: colors.text,
+      ...textStyles.body,
+    },
+    searchContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: moderateScale(32),
+    },
+    searchResultsList: {
+      paddingBottom: moderateScale(16),
+    },
+    searchResultsContainer: {
+      height: moderateScale(340),
+    },
+    friendsList: {
+      paddingBottom: moderateScale(16),
+    },
+    friendsListContainer: {
+      height: moderateScale(340),
+    },
+    emptyStateContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: moderateScale(32),
+    },
+    friendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: moderateScale(12),
+      paddingHorizontal: moderateScale(16),
+      borderRadius: moderateScale(12),
+      marginBottom: moderateScale(8),
+      height: moderateScale(72),
+    },
+    friendInfo: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    friendPhoto: {
+      width: moderateScale(40),
+      height: moderateScale(40),
+      borderRadius: moderateScale(20),
+      marginRight: moderateScale(12),
+    },
+    friendTextContainer: {
+      flex: 1,
+    },
+    nameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: moderateScale(2),
+    },
+    verifiedIcon: {
+      marginLeft: moderateScale(4),
+    },
+    checkmarkContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingHorizontal: moderateScale(16),
+      paddingTop: moderateScale(16),
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    button: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoAndNameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    photoIconButton: {
+      width: moderateScale(50),
+      height: moderateScale(50),
+      borderRadius: moderateScale(25),
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
+    groupPhotoPreview: {
+      width: '100%',
+      height: '100%',
+      borderRadius: moderateScale(25),
+    },
+    searchResultItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: moderateScale(12),
+      paddingHorizontal: moderateScale(16),
+      borderRadius: moderateScale(12),
+      marginBottom: moderateScale(8),
+      height: moderateScale(72),
+    },
+    searchResultInfo: {
+      flex: 1,
+      marginLeft: moderateScale(12),
+    },
+    addFriendButton: {
+      width: moderateScale(32),
+      height: moderateScale(32),
+      borderRadius: moderateScale(16),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    participantsContainer: {
+      marginTop: SPACING.md,
+    },
+    participantsList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.sm,
+      gap: SPACING.md,
+    },
+    participantItem: {
+      width: '25%',
+      alignItems: 'flex-start',
+      marginBottom: SPACING.md,
+    },
+    participantPhoto: {
+      marginRight: 0,
+    },
+    removeButton: {
+      padding: 2,
+    },
+    expandButton: {
+      paddingVertical: SPACING.sm,
+      alignItems: 'center',
+      marginTop: SPACING.sm,
+    },
+    groupDetailsContainer: {
+      alignItems: 'center',
+      padding: SPACING.md,
+    },
+    groupPhotoLarge: {
+      width: moderateScale(120),
+      height: moderateScale(120),
+      borderRadius: moderateScale(60),
+      overflow: 'hidden',
+      marginBottom: SPACING.md,
+      borderWidth: 3,
+      borderColor: colors.primary,
+    },
+    participantsCountContainer: {
+      backgroundColor: colors.primary + '20',
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      borderRadius: moderateScale(20),
+      marginBottom: SPACING.lg,
+    },
+    participantsSection: {
+      width: '100%',
+      marginBottom: SPACING.lg,
+    },
+    adminContainer: {
+      width: '100%',
+      backgroundColor: colors.card,
+      borderRadius: moderateScale(12),
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.primary + '40',
+    },
+    adminHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    membersContainer: {
+      width: '100%',
+      backgroundColor: colors.card,
+      borderRadius: moderateScale(12),
+      padding: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    membersHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    participantsGrid: {
+      width: '100%',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: SPACING.md,
+    },
+    participantItemLarge: {
+      width: '30%',
+      alignItems: 'center',
+    },
+    participantPhotoLarge: {
+      width: moderateScale(70),
+      height: moderateScale(70),
+      borderRadius: moderateScale(35),
+      marginBottom: SPACING.xs,
+    },
+  });
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={modalStyles.modalContainer}>
+          <Animated.View 
+            style={[
+              modalStyles.modalOverlay,
+              {
+                opacity: fadeAnim
+              }
+            ]}
+          >
+            <View style={modalStyles.modalContent}>
+              <View style={modalStyles.modalHeader}>
+                <Text style={[textStyles.h4, { color: colors.text }]}>
+                  {currentStep === 1 ? 'Adicionar Amigos' : currentStep === 2 ? 'Novo Grupo' : 'Detalhes do Grupo'}
+                </Text>
+                <TouchableOpacity
+                  style={modalStyles.closeButton}
+                  onPress={onClose}
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              {renderStepIndicator()}
+
+              <ScrollView
+                contentContainerStyle={modalStyles.modalScrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {currentStep === 1 && renderStep2()}
+                {currentStep === 2 && renderStep1()}
+                {currentStep === 3 && renderStep3()}
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
 
 export function Groups() {
   const { colors, textStyles } = useTheme();
@@ -49,7 +1429,6 @@ export function Groups() {
     return () => unsubscribe();
   }, []);
 
-  // Função para criar um listener em tempo real para os grupos do usuário
   const subscribeToUserGroups = () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
@@ -59,13 +1438,11 @@ export function Groups() {
 
     const userDocRef = doc(db, 'users', currentUser.uid);
     
-    // Criar um listener para o documento do usuário
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
       if (userDoc.exists() && userDoc.data().groups && userDoc.data().groups.length > 0) {
         const groupsIds = userDoc.data().groups;
         const groupsData = [];
         
-        // Buscar informações detalhadas de cada grupo
         for (const groupId of groupsIds) {
           try {
             const groupDoc = await getDoc(doc(db, 'groups', groupId));
@@ -73,11 +1450,9 @@ export function Groups() {
               const groupData = {
                 id: groupDoc.id,
                 ...groupDoc.data(),
-                // Calcular valores extras
                 memberCount: groupDoc.data().members?.length || 0
               };
               
-              // Calcular o valor total das dívidas do grupo (isso será implementado depois)
               groupData.totalDebt = await calculateGroupDebt(groupId);
               
               groupsData.push(groupData);
@@ -101,7 +1476,6 @@ export function Groups() {
     return unsubscribe;
   };
 
-  // Função para criar um novo grupo
   const createGroup = async () => {
     try {
       if (!newGroupName.trim()) {
@@ -115,7 +1489,6 @@ export function Groups() {
         return;
       }
       
-      // Dados do novo grupo
       const newGroup = {
         name: newGroupName.trim(),
         photoURL: groupPhotoURL || 'https://via.placeholder.com/150?text=' + encodeURIComponent(newGroupName.trim().charAt(0).toUpperCase()),
@@ -126,20 +1499,16 @@ export function Groups() {
         debts: []
       };
       
-      // Adicionar o grupo à coleção de grupos
       const groupRef = await addDoc(collection(db, 'groups'), newGroup);
       
-      // Adicionar o ID do grupo ao array de grupos do usuário
       await updateDoc(doc(db, 'users', currentUser.uid), {
         groups: arrayUnion(groupRef.id)
       });
       
-      // Limpar o formulário e fechar o modal
       setNewGroupName('');
       setGroupPhotoURL('');
       setIsCreateModalVisible(false);
       
-      // Exibir mensagem de sucesso
       Alert.alert('Sucesso', 'Grupo criado com sucesso!');
       
     } catch (error) {
@@ -148,12 +1517,8 @@ export function Groups() {
     }
   };
   
-  // Função para calcular a dívida total de um grupo (simplificada por enquanto)
   const calculateGroupDebt = async (groupId) => {
     try {
-      // Aqui implementaríamos a lógica para calcular a dívida total do grupo
-      // Isso envolveria buscar todas as dívidas associadas ao grupo
-      // Por enquanto, retornaremos um valor aleatório para demonstração
       return Math.random() * 1000;
     } catch (error) {
       console.error('Erro ao calcular dívida do grupo:', error);
@@ -169,15 +1534,7 @@ export function Groups() {
   };
 
   const navigateToGroupDetail = (group) => {
-    // Aqui navegaríamos para a tela de detalhes do grupo
-    // Por enquanto, apenas exibiremos um alerta
-    Alert.alert(
-      'Detalhes do Grupo',
-      `Nome: ${group.name}\nMembros: ${group.memberCount}\nValor Total: ${formatCurrency(group.totalDebt.toString())}`,
-      [
-        { text: 'OK' }
-      ]
-    );
+    navigation.navigate('GroupDetail', { groupId: group.id });
   };
 
   const renderGroupItem = ({ item }) => (
@@ -213,7 +1570,6 @@ export function Groups() {
     <View style={[styles.separator, { backgroundColor: colors.border }]} />
   );
 
-  // Nova função para remover o usuário de todos os grupos
   const removeFromAllGroups = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -237,7 +1593,6 @@ export function Groups() {
               try {
                 setLoading(true);
                 
-                // Buscar o documento do usuário
                 const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
                 if (!userDoc.exists() || !userDoc.data().groups) {
                   setLoading(false);
@@ -246,7 +1601,6 @@ export function Groups() {
                 
                 const userGroups = userDoc.data().groups;
                 
-                // Para cada grupo, remover o usuário da lista de membros
                 for (const groupId of userGroups) {
                   try {
                     const groupRef = doc(db, 'groups', groupId);
@@ -258,7 +1612,6 @@ export function Groups() {
                   }
                 }
                 
-                // Limpar a lista de grupos do usuário
                 await updateDoc(doc(db, 'users', currentUser.uid), {
                   groups: []
                 });
@@ -279,6 +1632,80 @@ export function Groups() {
       console.error('Erro ao processar a remoção:', error);
       Alert.alert('Erro', 'Ocorreu um erro ao tentar processar sua solicitação.');
     }
+  };
+
+  const renderFriendItem = ({ item: friend, index }) => {
+    const isSelected = selectedFriends.some(f => f.id === friend.id);
+    
+    return (
+      <TouchableOpacity
+        key={friend.id}
+        style={[
+          styles.friendItem, 
+          { 
+            backgroundColor: colors.cardBackground,
+            borderColor: isSelected ? colors.primary : 'transparent',
+            borderWidth: isSelected ? 2 : 0
+          }
+        ]}
+        onPress={() => toggleFriendSelection(friend)}
+      >
+        <View style={styles.friendInfo}>
+          <View style={styles.photoContainer}>
+            <Image
+              source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+              style={[styles.friendPhoto, {
+                width: moderateScale(50),
+                height: moderateScale(50),
+                borderRadius: moderateScale(25),
+              }]}
+            />
+          </View>
+          <View style={styles.friendTextContainer}>
+            <View style={styles.nameContainer}>
+              <Text style={[textStyles.body, { color: colors.text }]}>
+                {friend.username || friend.email}
+              </Text>
+              {friend.isVerified && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={16} 
+                  color={colors.primary} 
+                  style={styles.verifiedIcon}
+                />
+              )}
+            </View>
+            <Text 
+              style={[textStyles.bodySmall, { color: colors.text2 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {friend.email}
+            </Text>
+          </View>
+        </View>
+        {isSelected && (
+          <View style={[styles.checkmarkContainer, { 
+            backgroundColor: colors.primary,
+            width: moderateScale(24),
+            height: moderateScale(24),
+            borderRadius: moderateScale(12),
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 3,
+            shadowColor: colors.primary,
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3,
+          }]}>
+            <Ionicons name="checkmark" size={16} color={colors.background} />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -322,11 +1749,39 @@ export function Groups() {
 
           <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
             <TouchableOpacity
-              onPress={() => setIsCreateModalVisible(true)}
-              style={[styles.addButton, { borderColor: colors.primary }]}
+              onPress={() => {
+                console.log('Botão Criar Grupo pressionado');
+                setIsCreateModalVisible(true);
+              }}
+              style={[styles.addButton, { 
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.xs,
+                paddingVertical: SPACING.md,
+                paddingHorizontal: SPACING.xl,
+                borderRadius: moderateScale(20),
+                elevation: 3,
+                shadowColor: colors.primary,
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3,
+                alignSelf: 'center',
+                width: '100%',
+              }]}
             >
-              <Ionicons name="add-circle" size={20} color={colors.primary} />
-              <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
+              <Ionicons name="add-circle" size={20} color={colors.background} />
+              <Text style={[textStyles.button, { 
+                color: colors.background,
+                fontSize: moderateScale(15),
+                fontWeight: '600',
+                letterSpacing: 0.5,
+              }]}>
                 Criar Grupo
               </Text>
             </TouchableOpacity>
@@ -348,99 +1803,32 @@ export function Groups() {
             Crie seu primeiro grupo para dividir despesas com amigos!
           </Text>
           <TouchableOpacity
-            onPress={() => setIsCreateModalVisible(true)}
-            style={[styles.createButton, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              console.log('Botão Criar Grupo (estado vazio) pressionado');
+              setIsCreateModalVisible(true);
+            }}
+            style={[styles.createButton, { borderColor: colors.primary }]}
           >
-            <Text style={[textStyles.button, { color: colors.white }]}>
+            <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+            <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
               Criar Grupo
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Modal para criar grupo */}
-      <Modal
+      <CreateGroupModal
         visible={isCreateModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsCreateModalVisible(false)}
-      >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[textStyles.h3, { color: colors.text }]}>
-                Criar Novo Grupo
-              </Text>
-              <TouchableOpacity 
-                onPress={() => {
-                  setIsCreateModalVisible(false);
-                  setNewGroupName('');
-                  setGroupPhotoURL('');
-                }}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalContent}>
-              <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
-                Nome do grupo:
-              </Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.card,
-                  color: colors.text,
-                  borderColor: colors.border
-                }]}
-                placeholder="Ex: Viagem para Praia"
-                placeholderTextColor={colors.text2}
-                value={newGroupName}
-                onChangeText={setNewGroupName}
-              />
-
-              <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
-                URL da imagem do grupo (opcional):
-              </Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.card,
-                  color: colors.text,
-                  borderColor: colors.border
-                }]}
-                placeholder="https://exemplo.com/imagem.jpg"
-                placeholderTextColor={colors.text2}
-                value={groupPhotoURL}
-                onChangeText={setGroupPhotoURL}
-              />
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => {
-                    setIsCreateModalVisible(false);
-                    setNewGroupName('');
-                    setGroupPhotoURL('');
-                  }}
-                >
-                  <Text style={[textStyles.button, { color: colors.text }]}>Cancelar</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.button, { 
-                    backgroundColor: colors.primary,
-                    opacity: newGroupName.trim() ? 1 : 0.5
-                  }]}
-                  onPress={createGroup}
-                  disabled={!newGroupName.trim()}
-                >
-                  <Text style={[textStyles.button, { color: colors.white }]}>Criar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => {
+          console.log('Fechando modal de criação de grupo');
+          setIsCreateModalVisible(false);
+        }}
+        onGroupCreated={() => {
+          console.log('Grupo criado com sucesso');
+          const unsubscribe = subscribeToUserGroups();
+          return () => unsubscribe();
+        }}
+      />
     </View>
   );
 }
@@ -521,56 +1909,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   createButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: moderateScale(8),
-    marginTop: SPACING.xl,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '80%',
-    borderRadius: moderateScale(16),
-    overflow: 'hidden',
-  },
-  modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  closeButton: {
-    padding: SPACING.sm,
-  },
-  modalContent: {
-    padding: SPACING.lg,
-  },
-  input: {
-    height: moderateScale(48),
-    borderWidth: 1,
-    borderRadius: moderateScale(8),
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  button: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: SPACING.xs,
     borderRadius: moderateScale(8),
     borderWidth: 1,
-    borderColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   removeButton: {
     padding: SPACING.xs,

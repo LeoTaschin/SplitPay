@@ -458,7 +458,7 @@ export function Friends() {
         style={[styles.addFriendButton, { backgroundColor: colors.primary }]}
         onPress={() => addFriend(item)}
       >
-        <Ionicons name="person-add" size={20} color={colors.white} />
+        <Ionicons name="person-add" size={15} color={colors.background} />
       </TouchableOpacity>
     </View>
   );
@@ -520,10 +520,35 @@ export function Friends() {
           <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
             <TouchableOpacity
               onPress={() => setIsSearchModalVisible(true)}
-              style={[styles.addButton, { borderColor: colors.primary }]}
+              style={[styles.addButton, { 
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.xs,
+                paddingVertical: SPACING.md,
+                paddingHorizontal: SPACING.xl,
+                borderRadius: moderateScale(20),
+                elevation: 3,
+                shadowColor: colors.primary,
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3,
+                alignSelf: 'center',
+                width: '100%',
+              }]}
             >
-              <Ionicons name="person-add" size={20} color={colors.primary} />
-              <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
+              <Ionicons name="person-add" size={20} color={colors.background} />
+              <Text style={[textStyles.button, { 
+                color: colors.background,
+                fontSize: moderateScale(15),
+                fontWeight: '600',
+                letterSpacing: 0.5,
+              }]}>
                 Adicionar Amigo
               </Text>
             </TouchableOpacity>
@@ -652,7 +677,7 @@ export function Friends() {
             ]}
           >
             <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
-              <Ionicons name="checkmark" size={32} color={colors.white} />
+              <Ionicons name="checkmark" size={32} color={colors.background} />
             </View>
             <Text style={[textStyles.h3, { color: colors.text, marginTop: SPACING.md, textAlign: 'center' }]}>
               Amigo adicionado{'\n'}com sucesso!
@@ -828,9 +853,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addFriendButton: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: moderateScale(15),
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.sm,

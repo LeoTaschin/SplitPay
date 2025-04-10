@@ -14,7 +14,6 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import AccountConfirmation from '../screens/AccountConfirmation';
 import HomeScreen from '../screens/Home';
 import { Friends } from '../screens/Friends';
-import { Groups } from '../screens/Groups';
 import SelectDebtTarget from '../screens/SelectDebtTarget';
 import Home from '../screens/Home';
 import { Profile } from '../screens/Profile';
@@ -26,6 +25,7 @@ import { Privacy } from '../screens/Privacy';
 import { Help } from '../screens/Help';
 import { About } from '../screens/About';
 import { FriendProfile } from '../screens/FriendProfile';
+import { GroupDetail } from '../screens/GroupDetail';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -101,14 +101,6 @@ export default function AppNavigator() {
             <Stack.Screen name="AccountConfirmation" component={AccountConfirmation} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen 
-              name="Groups" 
-              component={Groups}
-              options={{
-                animation: 'slide_from_right',
-                animationDuration: 300,
-              }}
-            />
-            <Stack.Screen 
               name="SelectDebtTarget" 
               component={SelectDebtTarget}
               options={{
@@ -178,6 +170,14 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="FriendProfile" 
               component={FriendProfile}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="GroupDetail" 
+              component={GroupDetail}
               options={{
                 animation: 'slide_from_right',
                 animationDuration: 300,
