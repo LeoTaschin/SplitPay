@@ -619,7 +619,11 @@ export function Friends() {
                       contentContainerStyle={styles.searchResultsList}
                       showsVerticalScrollIndicator={false}
                     >
-                      {searchResults.map((item) => renderSearchResult({ item }))}
+                      {searchResults.map((item) => (
+                        <View key={item.id || `search-${item.username}`}>
+                          {renderSearchResult({ item })}
+                        </View>
+                      ))}
                     </ScrollView>
                   ) : null}
                 </Animated.View>

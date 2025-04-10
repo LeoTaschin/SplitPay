@@ -385,9 +385,9 @@ export function FriendProfile({ route }) {
       const updatedFriendFriends = friendDoc.data().friends.filter(id => id !== currentUser.uid);
       await updateDoc(friendRef, { friends: updatedFriendFriends });
 
-      // Refresh friends list
+      // Fechar modal e voltar para a tela anterior
       closeAllModals();
-      navigation.navigate('Friends');
+      navigation.goBack();
     } catch (error) {
       console.error('Erro ao remover amigo:', error);
       Alert.alert('Erro', 'Não foi possível remover o amigo');
@@ -627,14 +627,16 @@ export function FriendProfile({ route }) {
       />
       
       <StatusBar barStyle={colors.statusBar} />
+      
+      {/* Botão de voltar fixo no topo, fora do ScrollView */}
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={[styles.backButton, { backgroundColor: colors.surface }]}
+      >
+        <Ionicons name="arrow-back" size={24} color={colors.text} />
+      </TouchableOpacity>
+      
       <SafeAreaView style={styles.safeArea}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={[styles.backButton, { backgroundColor: colors.surface }]}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-
         <ScrollView 
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -1274,11 +1276,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: SPACING.xxl * 2,
+    top: Platform.OS === 'ios' ? SPACING.xxl + SPACING.lg : SPACING.xl,
     left: SPACING.lg,
     padding: SPACING.sm,
     borderRadius: moderateScale(12),
-    zIndex: 1,
+    zIndex: 10,
+    elevation: 10,
   },
   modalOverlay: {
     flex: 1,
