@@ -198,14 +198,6 @@ export default function SelectDebtTarget({ navigation }) {
           <Text style={[textStyles.body, { color: colors.textSecondary }]}>
             Você ainda não tem amigos adicionados
           </Text>
-          <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.navigate('Friends')}
-          >
-            <Text style={[textStyles.button, { color: colors.white }]}>
-              Adicionar Amigos
-            </Text>
-          </TouchableOpacity>
         </View>
       );
     }
@@ -216,14 +208,6 @@ export default function SelectDebtTarget({ navigation }) {
           <Text style={[textStyles.body, { color: colors.textSecondary }]}>
             Você ainda não participa de nenhum grupo
           </Text>
-          <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.navigate('Groups')}
-          >
-            <Text style={[textStyles.button, { color: colors.white }]}>
-              Criar Grupo
-            </Text>
-          </TouchableOpacity>
         </View>
       );
     }

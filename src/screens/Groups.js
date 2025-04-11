@@ -67,32 +67,36 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
 
   useEffect(() => {
     if (visible) {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          damping: 20,
+          mass: 1,
+          stiffness: 100,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
       fetchFriends();
     } else {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 20,
+          mass: 1,
+          stiffness: 100,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
       ]).start();
       
       setCurrentStep(1);
@@ -353,6 +357,11 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
         return;
       }
       
+      if (!localImageUri) {
+        Alert.alert('Erro', 'Você precisa adicionar uma foto para o grupo');
+        return;
+      }
+      
       const currentUser = auth.currentUser;
       if (!currentUser) {
         Alert.alert('Erro', 'Você precisa estar logado para criar um grupo');
@@ -361,15 +370,13 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       
       setLoading(true);
       
-      // Fazer upload da imagem se houver uma selecionada
-      let photoURL = groupPhotoURL;
-      if (localImageUri) {
-        photoURL = await uploadImage();
-      }
+      // Fazer upload da imagem
+      const photoURL = await uploadImage();
       
-      // Se não houver foto selecionada ou URL, usar uma imagem padrão com a inicial do grupo
       if (!photoURL) {
-        photoURL = 'https://via.placeholder.com/150?text=' + encodeURIComponent(groupName.trim().charAt(0).toUpperCase());
+        Alert.alert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
+        setLoading(false);
+        return;
       }
       
       const newGroup = {
@@ -397,10 +404,6 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       
       setGroupCreated(true);
       setCurrentStep(3);
-      
-      if (onGroupCreated) {
-        onGroupCreated();
-      }
       
     } catch (error) {
       console.error('Erro ao criar grupo:', error);
@@ -456,10 +459,10 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               <Ionicons name="camera" size={24} color={colors.primary} />
             )}
           </TouchableOpacity>
-      <TextInput
-        style={[modalStyles.searchInput, { 
+          <TextInput
+            style={[modalStyles.searchInput, { 
               backgroundColor: 'transparent',
-          color: colors.text,
+              color: colors.text,
               borderColor: 'transparent',
               flex: 1,
               marginLeft: SPACING.sm,
@@ -468,13 +471,13 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               paddingHorizontal: SPACING.md,
               fontSize: moderateScale(16),
               textAlignVertical: 'center'
-        }]}
-        placeholder="Nome do grupo"
-        placeholderTextColor={colors.text2}
-        value={groupName}
-        onChangeText={setGroupName}
-        autoCapitalize="words"
-        autoCorrect={false}
+            }]}
+            placeholder="Nome do grupo"
+            placeholderTextColor={colors.text2}
+            value={groupName}
+            onChangeText={setGroupName}
+            autoCapitalize="words"
+            autoCorrect={false}
             multiline={false}
           />
         </View>
@@ -488,9 +491,9 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           marginTop: SPACING.md,
           maxHeight: isExpanded ? undefined : moderateScale(300),
         }]}>
-        <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
+          <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
             Participantes
-        </Text>
+          </Text>
           <ScrollView 
             style={{ maxHeight: isExpanded ? undefined : moderateScale(250) }}
             showsVerticalScrollIndicator={true}
@@ -514,7 +517,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                   marginBottom: SPACING.md,
                 }]}>
                   <View style={{ position: 'relative' }}>
-            <Image 
+                    <Image 
                       source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
                       style={[modalStyles.participantPhoto, {
                         width: moderateScale(50),
@@ -522,7 +525,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                         borderRadius: moderateScale(25),
                       }]}
                     />
-        <TouchableOpacity
+                    <TouchableOpacity
                       style={[modalStyles.removeButton, {
                         position: 'absolute',
                         top: -5,
@@ -533,7 +536,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                       onPress={() => toggleFriendSelection(friend)}
                     >
                       <Ionicons name="close-circle" size={20} color={colors.text2} />
-        </TouchableOpacity>
+                    </TouchableOpacity>
                   </View>
                   <Text 
                     style={[textStyles.bodySmall, { 
@@ -551,7 +554,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
             </View>
           </ScrollView>
           {selectedFriends.length > 4 && (
-          <TouchableOpacity
+            <TouchableOpacity
               style={[modalStyles.expandButton, {
                 backgroundColor: 'transparent',
                 paddingVertical: SPACING.sm,
@@ -565,10 +568,10 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 textAlign: 'center',
               }]}>
                 {isExpanded ? 'Ver menos' : `Ver mais (${selectedFriends.length} participantes)`}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <View style={[modalStyles.buttonContainer, { 
           flexDirection: 'column',
@@ -579,10 +582,10 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           paddingBottom: SPACING.xl,
           paddingTop: SPACING.xl,
         }]}>
-        <TouchableOpacity
-          style={[modalStyles.button, { 
-            backgroundColor: colors.primary,
-              opacity: groupName.trim() ? 1 : 0.5,
+          <TouchableOpacity
+            style={[modalStyles.button, { 
+              backgroundColor: colors.primary,
+              opacity: groupName.trim() && localImageUri ? 1 : 0.5,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -599,12 +602,12 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               shadowOpacity: 0.25,
               shadowRadius: 3,
               width: '100%',
-          }]}
-          onPress={createGroup}
-          disabled={!groupName.trim()}
+            }]}
+            onPress={createGroup}
+            disabled={!groupName.trim() || !localImageUri}
             activeOpacity={0.7}
-        >
-          {loading ? (
+          >
+            {loading ? (
               <ActivityIndicator size="small" color={colors.background} />
             ) : (
               <Text style={[textStyles.button, { 
@@ -613,8 +616,8 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 fontWeight: '600',
                 letterSpacing: 0.5,
               }]}>Criar Grupo</Text>
-          )}
-        </TouchableOpacity>
+            )}
+          </TouchableOpacity>
           
           <TouchableOpacity
             style={[modalStyles.button, { 
@@ -630,7 +633,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               textAlign: 'center',
             }]}>Voltar</Text>
           </TouchableOpacity>
-      </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -814,12 +817,17 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
   const renderStep3 = () => (
     <View style={[modalStyles.modalContent, { flex: 1 }]}>
       <ScrollView 
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ 
+          paddingBottom: SPACING.xl * 3
+        }}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
       >
         <View style={[modalStyles.groupDetailsContainer, { 
           alignItems: 'center',
           padding: SPACING.md,
+          flex: 1,
         }]}>
           <View style={[modalStyles.groupPhotoLarge, { 
             width: moderateScale(120),
@@ -1018,14 +1026,13 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: SPACING.md,
-          marginTop: 'auto',
           paddingHorizontal: SPACING.md,
           paddingBottom: SPACING.xl,
           paddingTop: SPACING.xl,
         }]}>
-        <TouchableOpacity
-          style={[modalStyles.button, { 
-            backgroundColor: colors.primary,
+          <TouchableOpacity
+            style={[modalStyles.button, { 
+              backgroundColor: colors.primary,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1043,7 +1050,12 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               shadowRadius: 3,
               width: '100%',
             }]}
-            onPress={onClose}
+            onPress={() => {
+              if (onGroupCreated) {
+                onGroupCreated();
+              }
+              onClose();
+            }}
             activeOpacity={0.7}
           >
             <Text style={[textStyles.button, { 
@@ -1052,8 +1064,8 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               fontWeight: '600',
               letterSpacing: 0.5,
             }]}>Concluir</Text>
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -1110,7 +1122,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       paddingTop: moderateScale(16),
       paddingBottom: moderateScale(32),
       height: '85%',
-    width: '100%',
+      width: '100%',
     },
     modalHeader: {
       flexDirection: 'row',
@@ -1384,10 +1396,24 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               }
             ]}
           >
-            <View style={modalStyles.modalContent}>
+            <Animated.View 
+              style={[
+                modalStyles.modalContent,
+                {
+                  transform: [
+                    {
+                      translateY: slideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [800, 0]
+                      })
+                    }
+                  ]
+                }
+              ]}
+            >
               <View style={modalStyles.modalHeader}>
                 <Text style={[textStyles.h4, { color: colors.text }]}>
-                  {currentStep === 1 ? 'Adicionar Amigos' : currentStep === 2 ? 'Novo Grupo' : 'Detalhes do Grupo'}
+                  {currentStep === 1 ? 'Selecionar Amigos' : currentStep === 2 ? 'Personalizar Grupo' : 'Detalhes do Grupo'}
                 </Text>
                 <TouchableOpacity
                   style={modalStyles.closeButton}
@@ -1408,7 +1434,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 {currentStep === 2 && renderStep1()}
                 {currentStep === 3 && renderStep3()}
               </ScrollView>
-            </View>
+            </Animated.View>
           </Animated.View>
         </View>
       </TouchableWithoutFeedback>
@@ -1454,8 +1480,6 @@ export function Groups() {
                 ...groupDoc.data(),
                 memberCount: groupDoc.data().members?.length || 0
               };
-              
-              groupData.totalDebt = await calculateGroupDebt(groupId);
               
               groupsData.push(groupData);
             }
@@ -1519,15 +1543,6 @@ export function Groups() {
     }
   };
   
-  const calculateGroupDebt = async (groupId) => {
-    try {
-      return Math.random() * 1000;
-    } catch (error) {
-      console.error('Erro ao calcular dívida do grupo:', error);
-      return 0;
-    }
-  };
-
   const onRefresh = async () => {
     setRefreshing(true);
     const unsubscribe = subscribeToUserGroups();
@@ -1539,33 +1554,49 @@ export function Groups() {
     navigation.navigate('GroupDetail', { groupId: group.id });
   };
 
-  const renderGroupItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.groupItem, { backgroundColor: colors.cardBackground }]}
-      onPress={() => navigateToGroupDetail(item)}
-    >
-      <View style={styles.groupInfo}>
-        <View style={styles.photoContainer}>
-          <Image
-            source={{ uri: item.photoURL || 'https://via.placeholder.com/50' }}
-            style={styles.groupPhoto}
-          />
+  const renderGroupItem = ({ item, index }) => (
+    <>
+      <TouchableOpacity
+        style={[styles.groupItem, { backgroundColor: colors.cardBackground }]}
+        onPress={() => navigateToGroupDetail(item)}
+      >
+        <View style={styles.groupInfo}>
+          <View style={styles.photoContainer}>
+            {item.photoURL ? (
+              <Image
+                source={{ uri: item.photoURL }}
+                style={styles.groupPhoto}
+                defaultSource={require('../assets/images/Logo SplitPay.png')}
+                onError={() => {
+                  console.log('Error loading group photo:', item.photoURL);
+                }}
+              />
+            ) : (
+              <View style={[styles.groupPhoto, { 
+                backgroundColor: colors.primary + '20',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }]}>
+                <Ionicons name="people" size={24} color={colors.primary} />
+              </View>
+            )}
+          </View>
+          <View style={styles.groupTextContainer}>
+            <Text style={[textStyles.body, { color: colors.text }]}>
+              {item.name}
+            </Text>
+            <Text 
+              style={[textStyles.bodySmall, { color: colors.text2 }]}
+            >
+              {item.memberCount} membros
+            </Text>
+          </View>
         </View>
-        <View style={styles.groupTextContainer}>
-          <Text style={[textStyles.body, { color: colors.text }]}>
-            {item.name}
-          </Text>
-          <Text 
-            style={[textStyles.bodySmall, { color: colors.text2 }]}
-          >
-            {item.memberCount} membros
-          </Text>
-        </View>
-      </View>
-      <Text style={[textStyles.body, { color: colors.primary }]}>
-        {formatCurrency(item.totalDebt.toString())}
-      </Text>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {index !== groups.length - 1 && (
+        <View style={[styles.separator, { backgroundColor: colors.border }]} />
+      )}
+    </>
   );
 
   const renderSeparator = () => (
