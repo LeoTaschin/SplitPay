@@ -18,7 +18,7 @@ import { useAuth } from '../hooks/useAuth';
 import { auth, storage, db } from '../config/firebase';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, updateDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 
 export function EditProfile({ navigation }) {
@@ -68,8 +68,17 @@ export function EditProfile({ navigation }) {
       setLoading(true);
 
       // Check if username is available (case-insensitive)
-      const usernameDoc = await getDoc(doc(db, 'usernames', username.toLowerCase()));
-      if (usernameDoc.exists()) {
+      const usernameQuery = query(
+        collection(db, 'usernames'),
+        where('uid', '!=', user.uid)
+      );
+      const usernameSnapshot = await getDocs(usernameQuery);
+      
+      const usernameExists = usernameSnapshot.docs.some(doc => 
+        doc.id.toLowerCase() === username.toLowerCase()
+      );
+
+      if (usernameExists) {
         Alert.alert('Erro', 'Este nome de usuário já está em uso.');
         setLoading(false);
         return;

@@ -499,7 +499,7 @@ export function Friends() {
 
       {loadingFriends ? (
         <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
+      ) : friends.length > 0 ? (
         <ScrollView
           contentContainerStyle={styles.listContent}
           refreshControl={
@@ -554,6 +554,27 @@ export function Friends() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+      ) : (
+        <View style={styles.emptyStateContainer}>
+          <View style={[styles.emptyStateIcon, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name="people" size={60} color={colors.primary} />
+          </View>
+          <Text style={[textStyles.h3, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>
+            Você não tem amigos adicionados
+          </Text>
+          <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.sm, marginBottom: SPACING.xl }]}>
+            Adicione amigos para compartilhar despesas e gerenciar dívidas juntos
+          </Text>
+          <TouchableOpacity
+            onPress={() => setIsSearchModalVisible(true)}
+            style={[styles.addFriendButton, { backgroundColor: colors.primary }]}
+          >
+            <Ionicons name="person-add" size={20} color={colors.background} />
+            <Text style={[textStyles.button, { color: colors.background, marginLeft: SPACING.xs }]}>
+              Adicionar Amigo
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <Modal
@@ -853,12 +874,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addFriendButton: {
-    width: moderateScale(30),
-    height: moderateScale(30),
-    borderRadius: moderateScale(15),
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: SPACING.sm,
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: moderateScale(25),
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
   },
   fullScreenAlert: {
     position: 'absolute',
@@ -1000,5 +1029,19 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 1,
     height: 40,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xl,
+  },
+  emptyStateIcon: {
+    width: moderateScale(120),
+    height: moderateScale(120),
+    borderRadius: moderateScale(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
 }); 

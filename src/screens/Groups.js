@@ -67,32 +67,32 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
       fetchFriends();
     } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
       ]).start();
       
       setCurrentStep(1);
@@ -312,21 +312,23 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
     try {
       setUploadingImage(true);
       
-      // Gerar um nome único para o arquivo
+      // Generate a unique filename using timestamp and random number instead of UUID
+      const timestamp = Date.now();
+      const randomNum = Math.floor(Math.random() * 10000);
       const fileExtension = localImageUri.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExtension}`;
+      const fileName = `group_photo_${timestamp}_${randomNum}.${fileExtension}`;
       
-      // Criar uma referência para o arquivo no Storage
+      // Create a reference for the file in Storage
       const storageRef = ref(storage, `group_photos/${fileName}`);
       
-      // Converter a URI local para um blob
+      // Convert the local URI to a blob
       const response = await fetch(localImageUri);
       const blob = await response.blob();
       
-      // Fazer upload do blob para o Storage
+      // Upload the blob to Storage
       await uploadBytes(storageRef, blob);
       
-      // Obter a URL de download
+      // Get the download URL
       const downloadURL = await getDownloadURL(storageRef);
       
       setUploadingImage(false);
@@ -454,25 +456,25 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               <Ionicons name="camera" size={24} color={colors.primary} />
             )}
           </TouchableOpacity>
-          <TextInput
-            style={[modalStyles.searchInput, { 
+      <TextInput
+        style={[modalStyles.searchInput, { 
               backgroundColor: 'transparent',
-              color: colors.text,
+          color: colors.text,
               borderColor: 'transparent',
               flex: 1,
               marginLeft: SPACING.sm,
-              minHeight: moderateScale(50),
+              minHeight: moderateScale(60),
               paddingVertical: SPACING.md,
               paddingHorizontal: SPACING.md,
               fontSize: moderateScale(16),
               textAlignVertical: 'center'
-            }]}
-            placeholder="Nome do grupo"
-            placeholderTextColor={colors.text2}
-            value={groupName}
-            onChangeText={setGroupName}
-            autoCapitalize="words"
-            autoCorrect={false}
+        }]}
+        placeholder="Nome do grupo"
+        placeholderTextColor={colors.text2}
+        value={groupName}
+        onChangeText={setGroupName}
+        autoCapitalize="words"
+        autoCorrect={false}
             multiline={false}
           />
         </View>
@@ -486,9 +488,9 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           marginTop: SPACING.md,
           maxHeight: isExpanded ? undefined : moderateScale(300),
         }]}>
-          <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
+        <Text style={[textStyles.body, { color: colors.text, marginBottom: SPACING.sm }]}>
             Participantes
-          </Text>
+        </Text>
           <ScrollView 
             style={{ maxHeight: isExpanded ? undefined : moderateScale(250) }}
             showsVerticalScrollIndicator={true}
@@ -512,7 +514,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                   marginBottom: SPACING.md,
                 }]}>
                   <View style={{ position: 'relative' }}>
-                    <Image
+            <Image 
                       source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
                       style={[modalStyles.participantPhoto, {
                         width: moderateScale(50),
@@ -520,7 +522,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                         borderRadius: moderateScale(25),
                       }]}
                     />
-                    <TouchableOpacity
+        <TouchableOpacity
                       style={[modalStyles.removeButton, {
                         position: 'absolute',
                         top: -5,
@@ -531,7 +533,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                       onPress={() => toggleFriendSelection(friend)}
                     >
                       <Ionicons name="close-circle" size={20} color={colors.text2} />
-                    </TouchableOpacity>
+        </TouchableOpacity>
                   </View>
                   <Text 
                     style={[textStyles.bodySmall, { 
@@ -549,7 +551,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
             </View>
           </ScrollView>
           {selectedFriends.length > 4 && (
-            <TouchableOpacity
+          <TouchableOpacity
               style={[modalStyles.expandButton, {
                 backgroundColor: 'transparent',
                 paddingVertical: SPACING.sm,
@@ -563,10 +565,10 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 textAlign: 'center',
               }]}>
                 {isExpanded ? 'Ver menos' : `Ver mais (${selectedFriends.length} participantes)`}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
         <View style={[modalStyles.buttonContainer, { 
           flexDirection: 'column',
@@ -577,9 +579,9 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           paddingBottom: SPACING.xl,
           paddingTop: SPACING.xl,
         }]}>
-          <TouchableOpacity
-            style={[modalStyles.button, { 
-              backgroundColor: colors.primary,
+        <TouchableOpacity
+          style={[modalStyles.button, { 
+            backgroundColor: colors.primary,
               opacity: groupName.trim() ? 1 : 0.5,
               flexDirection: 'row',
               alignItems: 'center',
@@ -597,12 +599,12 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               shadowOpacity: 0.25,
               shadowRadius: 3,
               width: '100%',
-            }]}
-            onPress={createGroup}
-            disabled={!groupName.trim()}
+          }]}
+          onPress={createGroup}
+          disabled={!groupName.trim()}
             activeOpacity={0.7}
-          >
-            {loading ? (
+        >
+          {loading ? (
               <ActivityIndicator size="small" color={colors.background} />
             ) : (
               <Text style={[textStyles.button, { 
@@ -611,8 +613,8 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 fontWeight: '600',
                 letterSpacing: 0.5,
               }]}>Criar Grupo</Text>
-            )}
-          </TouchableOpacity>
+          )}
+        </TouchableOpacity>
           
           <TouchableOpacity
             style={[modalStyles.button, { 
@@ -628,7 +630,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               textAlign: 'center',
             }]}>Voltar</Text>
           </TouchableOpacity>
-        </View>
+      </View>
       </ScrollView>
     </View>
   );
@@ -1021,9 +1023,9 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           paddingBottom: SPACING.xl,
           paddingTop: SPACING.xl,
         }]}>
-          <TouchableOpacity
-            style={[modalStyles.button, { 
-              backgroundColor: colors.primary,
+        <TouchableOpacity
+          style={[modalStyles.button, { 
+            backgroundColor: colors.primary,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1050,8 +1052,8 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               fontWeight: '600',
               letterSpacing: 0.5,
             }]}>Concluir</Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
     </View>
   );
@@ -1712,18 +1714,10 @@ export function Groups() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[textStyles.h2, { color: colors.text }]}>Grupos</Text>
-        {groups.length > 0 && (
-          <TouchableOpacity 
-            onPress={removeFromAllGroups}
-            style={[styles.removeButton, { borderColor: colors.error }]}
-          >
-            <Text style={{ color: colors.error }}>Limpar Grupos</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {loading ? (
-        <View style={styles.content}>
+        <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : groups.length > 0 ? (
@@ -1739,20 +1733,14 @@ export function Groups() {
           }
           showsVerticalScrollIndicator={false}
         >
-          <FlatList
-            data={groups}
-            renderItem={renderGroupItem}
-            keyExtractor={(item) => item.id}
-            ItemSeparatorComponent={renderSeparator}
-            scrollEnabled={false}
-          />
-
+          {groups.map((group, index) => (
+            <React.Fragment key={group.id || index}>
+              {renderGroupItem({ item: group, index })}
+            </React.Fragment>
+          ))}
           <View style={[styles.footerContainer, { borderTopColor: colors.border }]}>
             <TouchableOpacity
-              onPress={() => {
-                console.log('Botão Criar Grupo pressionado');
-                setIsCreateModalVisible(true);
-              }}
+              onPress={() => setIsCreateModalVisible(true)}
               style={[styles.addButton, { 
                 backgroundColor: colors.primary,
                 borderColor: colors.primary,
@@ -1764,7 +1752,7 @@ export function Groups() {
                 paddingHorizontal: SPACING.xl,
                 borderRadius: moderateScale(20),
                 elevation: 3,
-                shadowColor: colors.primary,
+                shadowColor: '#000000',
                 shadowOffset: {
                   width: 0,
                   height: 2,
@@ -1775,7 +1763,7 @@ export function Groups() {
                 width: '100%',
               }]}
             >
-              <Ionicons name="add-circle" size={20} color={colors.background} />
+              <Ionicons name="add-circle-outline" size={20} color={colors.background} />
               <Text style={[textStyles.button, { 
                 color: colors.background,
                 fontSize: moderateScale(15),
@@ -1788,29 +1776,22 @@ export function Groups() {
           </View>
         </ScrollView>
       ) : (
-        <View style={styles.content}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-            <Ionicons 
-              name="people" 
-              size={moderateScale(48)} 
-              color={colors.primary} 
-            />
+        <View style={styles.emptyStateContainer}>
+          <View style={[styles.emptyStateIcon, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name="people" size={60} color={colors.primary} />
           </View>
           <Text style={[textStyles.h3, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>
-            Nenhum grupo encontrado
+            Você não faz parte de nenhum grupo
           </Text>
-          <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.md }]}>
-            Crie seu primeiro grupo para dividir despesas com amigos!
+          <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.sm, marginBottom: SPACING.xl }]}>
+            Crie um grupo para compartilhar despesas com amigos e familiares
           </Text>
           <TouchableOpacity
-            onPress={() => {
-              console.log('Botão Criar Grupo (estado vazio) pressionado');
-              setIsCreateModalVisible(true);
-            }}
-            style={[styles.createButton, { borderColor: colors.primary }]}
+            onPress={() => setIsCreateModalVisible(true)}
+            style={[styles.createGroupButton, { backgroundColor: colors.primary }]}
           >
-            <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-            <Text style={[textStyles.body, { color: colors.primary, marginLeft: SPACING.sm }]}>
+            <Ionicons name="add-circle-outline" size={20} color={colors.background} />
+            <Text style={[textStyles.button, { color: colors.background, marginLeft: SPACING.xs }]}>
               Criar Grupo
             </Text>
           </TouchableOpacity>
@@ -1819,14 +1800,10 @@ export function Groups() {
 
       <CreateGroupModal
         visible={isCreateModalVisible}
-        onClose={() => {
-          console.log('Fechando modal de criação de grupo');
-          setIsCreateModalVisible(false);
-        }}
+        onClose={() => setIsCreateModalVisible(false)}
         onGroupCreated={() => {
-          console.log('Grupo criado com sucesso');
-          const unsubscribe = subscribeToUserGroups();
-          return () => unsubscribe();
+          setIsCreateModalVisible(false);
+          onRefresh();
         }}
       />
     </View>
@@ -1923,5 +1900,40 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     borderWidth: 1,
     marginLeft: SPACING.md
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xl,
+  },
+  emptyStateIcon: {
+    width: moderateScale(120),
+    height: moderateScale(120),
+    borderRadius: moderateScale(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  createGroupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: moderateScale(25),
+    elevation: 3,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
   },
 }); 

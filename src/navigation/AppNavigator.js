@@ -18,6 +18,7 @@ import SelectDebtTarget from '../screens/SelectDebtTarget';
 import Home from '../screens/Home';
 import { Profile } from '../screens/Profile';
 import { NewDebt } from '../screens/NewDebt';
+import { NewGroupDebt } from '../screens/NewGroupDebt';
 import { Activity } from '../screens/Activity';
 import { EditProfile } from '../screens/EditProfile';
 import { Settings } from '../screens/Settings';
@@ -113,6 +114,15 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="NewDebt" 
               component={NewDebt}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen 
+              name="NewGroupDebt" 
+              component={NewGroupDebt}
               options={{
                 presentation: 'modal',
                 animation: 'slide_from_bottom',

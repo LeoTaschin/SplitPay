@@ -95,13 +95,33 @@ export const getDebtsAsCreditor = async (userId) => {
       where('paid', '==', false)
     );
 
-    const querySnapshot = await getDocs(q);
-    const debts = querySnapshot.docs.map(doc => ({
+    const groupQ = query(
+      collection(db, 'debts'),
+      where('receiverId', '==', userId),
+      where('type', '==', 'group'),
+      where('paid', '==', false)
+    );
+
+    const [querySnapshot, groupQuerySnapshot] = await Promise.all([
+      getDocs(q),
+      getDocs(groupQ)
+    ]);
+
+    const regularDebts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    console.log('debtService: Encontradas', debts.length, 'dívidas como credor');
-    return debts;
+
+    const groupDebts = groupQuerySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      debtorId: doc.data().payerId,
+      creditorId: doc.data().receiverId
+    }));
+
+    const allDebts = [...regularDebts, ...groupDebts];
+    console.log('debtService: Encontradas', allDebts.length, 'dívidas como credor');
+    return allDebts;
   } catch (error) {
     console.error('debtService: Erro ao buscar dívidas como credor:', error);
     throw error;
@@ -118,13 +138,33 @@ export const getDebtsAsDebtor = async (userId) => {
       where('paid', '==', false)
     );
 
-    const querySnapshot = await getDocs(q);
-    const debts = querySnapshot.docs.map(doc => ({
+    const groupQ = query(
+      collection(db, 'debts'),
+      where('payerId', '==', userId),
+      where('type', '==', 'group'),
+      where('paid', '==', false)
+    );
+
+    const [querySnapshot, groupQuerySnapshot] = await Promise.all([
+      getDocs(q),
+      getDocs(groupQ)
+    ]);
+
+    const regularDebts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    console.log('debtService: Encontradas', debts.length, 'dívidas como devedor');
-    return debts;
+
+    const groupDebts = groupQuerySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      debtorId: doc.data().payerId,
+      creditorId: doc.data().receiverId
+    }));
+
+    const allDebts = [...regularDebts, ...groupDebts];
+    console.log('debtService: Encontradas', allDebts.length, 'dívidas como devedor');
+    return allDebts;
   } catch (error) {
     console.error('debtService: Erro ao buscar dívidas como devedor:', error);
     throw error;
@@ -181,44 +221,42 @@ export const markDebtAsPaid = async (debtId) => {
 export const updateUserTotals = async (userId) => {
   try {
     console.log('debtService: Atualizando totais para usuário', userId);
-    const debtsAsCreditorQuery = query(
-      collection(db, 'debts'),
-      where('creditorId', '==', userId),
-      where('paid', '==', false)
-    );
-
-    const debtsAsDebtorQuery = query(
-      collection(db, 'debts'),
-      where('debtorId', '==', userId),
-      where('paid', '==', false)
-    );
-
+    
+    // Buscar todas as dívidas não pagas do usuário
     const [creditorDebts, debtorDebts] = await Promise.all([
-      getDocs(debtsAsCreditorQuery),
-      getDocs(debtsAsDebtorQuery)
+      getDebtsAsCreditor(userId),
+      getDebtsAsDebtor(userId)
     ]);
 
-    const totalToReceive = creditorDebts.docs.reduce(
-      (total, doc) => total + doc.data().amount,
-      0
-    );
+    // Calcular totais
+    const totalToReceive = creditorDebts.reduce((sum, debt) => {
+      // Para dívidas de grupo, usar o amountPerPerson
+      if (debt.type === 'group') {
+        return sum + (debt.amountPerPerson || 0);
+      }
+      return sum + (debt.amount || 0);
+    }, 0);
 
-    const totalToPay = debtorDebts.docs.reduce(
-      (total, doc) => total + doc.data().amount,
-      0
-    );
+    const totalToPay = debtorDebts.reduce((sum, debt) => {
+      // Para dívidas de grupo, usar o amountPerPerson
+      if (debt.type === 'group') {
+        return sum + (debt.amountPerPerson || 0);
+      }
+      return sum + (debt.amount || 0);
+    }, 0);
 
+    // Atualizar documento do usuário
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       totalToReceive,
       totalToPay,
-      updatedAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
     });
 
-    console.log('debtService: Totais atualizados', { totalToReceive, totalToPay });
+    console.log('debtService: Totais atualizados com sucesso');
     return { totalToReceive, totalToPay };
   } catch (error) {
-    console.error('debtService: Erro ao atualizar totais do usuário:', error);
+    console.error('debtService: Erro ao atualizar totais:', error);
     throw error;
   }
 }; 

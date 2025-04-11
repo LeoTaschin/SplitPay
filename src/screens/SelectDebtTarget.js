@@ -15,6 +15,7 @@ import { SelectionToolbar } from '../components/SelectionToolbar';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { getUserFriends } from '../services/userService';
+import { getUserGroups } from '../services/groupService';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function SelectDebtTarget({ navigation }) {
@@ -22,28 +23,36 @@ export default function SelectDebtTarget({ navigation }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('friends');
   const [friends, setFriends] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useFocusEffect(
     React.useCallback(() => {
-      const loadFriends = async () => {
+      const loadData = async () => {
         if (!user?.uid) return;
         
         try {
           setLoading(true);
+          
+          // Load friends
           const friendsList = await getUserFriends(user.uid);
           setFriends(friendsList);
+          
+          // Load groups
+          const groupsList = await getUserGroups(user.uid);
+          setGroups(groupsList);
+          
           setError(null);
         } catch (err) {
-          console.error('Erro ao carregar amigos:', err);
-          setError('Não foi possível carregar seus amigos');
+          console.error('Erro ao carregar dados:', err);
+          setError('Não foi possível carregar os dados');
         } finally {
           setLoading(false);
         }
       };
 
-      loadFriends();
+      loadData();
     }, [user?.uid])
   );
 
@@ -61,7 +70,20 @@ export default function SelectDebtTarget({ navigation }) {
         photoURL: friend.photoURL || null,
         isVerified: friend.isVerified || false
       },
-      type: activeTab
+      type: 'friend'
+    });
+  };
+
+  const handleSelectGroup = (group) => {
+    if (!group?.id) return;
+    navigation.navigate('NewGroupDebt', {
+      selectedGroup: {
+        id: group.id,
+        name: group.name,
+        photoURL: group.photoURL,
+        members: group.members,
+        admin: group.admin
+      }
     });
   };
 
@@ -77,7 +99,7 @@ export default function SelectDebtTarget({ navigation }) {
       <View style={styles.itemInfo}>
         <View style={styles.nameContainer}>
           <Text style={[textStyles.body, { color: colors.text }]}>
-            {item.username}
+            {item.username || item.email}
           </Text>
           {item.isVerified && (
             <Ionicons 
@@ -90,6 +112,41 @@ export default function SelectDebtTarget({ navigation }) {
         </View>
         <Text style={[textStyles.caption, { color: colors.text2 }]}>
           {item.email}
+        </Text>
+      </View>
+      <Ionicons 
+        name="chevron-forward" 
+        size={moderateScale(20)} 
+        color={colors.text2} 
+      />
+    </TouchableOpacity>
+  );
+
+  const renderGroupItem = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.itemContainer, { backgroundColor: colors.cardBackground }]}
+      onPress={() => handleSelectGroup(item)}
+    >
+      <View style={[styles.groupAvatar, { backgroundColor: colors.primary + '20' }]}>
+        {item.photoURL ? (
+          <Image
+            source={{ uri: item.photoURL }}
+            style={styles.avatar}
+          />
+        ) : (
+          <Ionicons
+            name="people"
+            size={moderateScale(24)}
+            color={colors.primary}
+          />
+        )}
+      </View>
+      <View style={styles.itemInfo}>
+        <Text style={[textStyles.body, { color: colors.text }]}>
+          {item.name}
+        </Text>
+        <Text style={[textStyles.caption, { color: colors.text2 }]}>
+          {item.members?.length || 0} membro{item.members?.length !== 1 ? 's' : ''}
         </Text>
       </View>
       <Ionicons 
@@ -115,7 +172,7 @@ export default function SelectDebtTarget({ navigation }) {
           <Text style={[textStyles.body, { color: colors.error }]}>{error}</Text>
           <TouchableOpacity 
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={() => loadFriends()}
+            onPress={() => loadData()}
           >
             <Text style={[textStyles.button, { color: colors.white }]}>
               Tentar Novamente
@@ -153,20 +210,28 @@ export default function SelectDebtTarget({ navigation }) {
       );
     }
 
-    if (activeTab === 'groups') {
+    if (activeTab === 'groups' && groups.length === 0) {
       return (
         <View style={styles.centerContainer}>
-          <Text style={[textStyles.body, { color: colors.text2 }]}>
-            Em breve você poderá dividir despesas em grupo!
+          <Text style={[textStyles.body, { color: colors.textSecondary }]}>
+            Você ainda não participa de nenhum grupo
           </Text>
+          <TouchableOpacity 
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.navigate('Groups')}
+          >
+            <Text style={[textStyles.button, { color: colors.white }]}>
+              Criar Grupo
+            </Text>
+          </TouchableOpacity>
         </View>
       );
     }
 
     return (
       <FlatList
-        data={friends}
-        renderItem={renderFriendItem}
+        data={activeTab === 'friends' ? friends : groups}
+        renderItem={activeTab === 'friends' ? renderFriendItem : renderGroupItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -227,6 +292,13 @@ const styles = StyleSheet.create({
     width: moderateScale(40),
     height: moderateScale(40),
     borderRadius: moderateScale(20),
+  },
+  groupAvatar: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemInfo: {
     flex: 1,
