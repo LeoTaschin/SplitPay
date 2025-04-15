@@ -33,11 +33,7 @@ export function Help({ navigation }) {
     {
       question: 'Como dividir uma conta?',
       answer: 'Ao adicionar uma despesa, você pode escolher entre divisão igual ou personalizada. Selecione os participantes e ajuste os valores conforme necessário.'
-    },
-    {
-      question: 'Como fazer um pagamento?',
-      answer: 'Na tela de detalhes da despesa, selecione "Marcar como Pago" para registrar seu pagamento. O status será atualizado automaticamente.'
-    },
+    }
   ];
 
   return (

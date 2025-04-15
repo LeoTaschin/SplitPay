@@ -62,11 +62,11 @@ export function Profile({ onEditProfile }) {
       title: 'Editar Perfil',
       onPress: () => navigation.navigate('EditProfile'),
     },
-    {
-      icon: 'settings-outline',
-      title: 'Configurações',
-      onPress: () => navigation.navigate('Settings'),
-    },
+    //{
+      //icon: 'settings-outline',
+      //title: 'Configurações',
+      //onPress: () => navigation.navigate('Settings'),
+    //},
     {
       icon: 'help-circle-outline',
       title: 'Ajuda',

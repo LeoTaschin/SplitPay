@@ -182,18 +182,31 @@ export function EditProfile({ navigation }) {
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.photoSection}>
-          <Image
-            source={{ uri: user?.photoURL || 'default_profile_pic_url' }}
-            style={[styles.profilePhoto, { borderColor: colors.primary }]}
-          />
-          <TouchableOpacity
-            onPress={handleSelectImage}
+        <View style={styles.photoContainer}>
+          {user?.photoURL ? (
+            <Image
+              source={{ uri: user.photoURL }}
+              style={[styles.photo, { 
+                borderColor: colors.primary,
+                backgroundColor: colors.surface 
+              }]}
+            />
+          ) : (
+            <View style={[styles.photo, { 
+              borderColor: colors.primary,
+              backgroundColor: colors.primary + '20',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }]}>
+              <Ionicons name="person" size={40} color={colors.primary} />
+            </View>
+          )}
+          <TouchableOpacity 
             style={[styles.changePhotoButton, { backgroundColor: colors.primary }]}
+            onPress={handleSelectImage}
           >
-            <Text style={[textStyles.button, { color: colors.surface }]}>
-              Alterar foto
-            </Text>
+            <Ionicons name="camera" size={20} color={colors.surface} />
+            <Text style={[textStyles.button, { color: colors.surface }]}>Alterar foto</Text>
           </TouchableOpacity>
         </View>
 
@@ -267,11 +280,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.lg,
   },
-  photoSection: {
+  photoContainer: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
   },
-  profilePhoto: {
+  photo: {
     width: moderateScale(120),
     height: moderateScale(120),
     borderRadius: moderateScale(60),
@@ -279,9 +292,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   changePhotoButton: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderRadius: moderateScale(20),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
   },
   formSection: {
     padding: SPACING.lg,

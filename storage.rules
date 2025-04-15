@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Função auxiliar para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Regras para imagens de perfil
+    match /profile_images/{imageId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Regras para fotos de grupos
+    match /group_photos/{photoId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Regras para uploads gerais
+    match /uploads/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Regras padrão para outros arquivos
+    match /{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+  }
+} 

@@ -20,11 +20,11 @@ export function About({ navigation }) {
   const buildNumber = '1';
 
   const handleOpenWebsite = () => {
-    Linking.openURL('https://splitpay.com');
+    Linking.openURL('https://apptapago.com');
   };
 
   const handleOpenInstagram = () => {
-    Linking.openURL('https://instagram.com/splitpay');
+    Linking.openURL('https://instagram.com/appsplitpay');
   };
 
   return (
@@ -71,7 +71,7 @@ export function About({ navigation }) {
             <View style={styles.socialInfo}>
               <Ionicons name="logo-instagram" size={24} color={colors.primary} />
               <Text style={[textStyles.body, { color: colors.text, marginLeft: SPACING.md }]}>
-                @splitpay
+                @appsplitpay
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text2} />
@@ -89,7 +89,7 @@ export function About({ navigation }) {
             <View style={styles.socialInfo}>
               <Ionicons name="globe-outline" size={24} color={colors.primary} />
               <Text style={[textStyles.body, { color: colors.text, marginLeft: SPACING.md }]}>
-                splitpay.com
+                apptapago.com
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text2} />

@@ -357,11 +357,6 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
         return;
       }
       
-      if (!localImageUri) {
-        Alert.alert('Erro', 'Você precisa adicionar uma foto para o grupo');
-        return;
-      }
-      
       const currentUser = auth.currentUser;
       if (!currentUser) {
         Alert.alert('Erro', 'Você precisa estar logado para criar um grupo');
@@ -370,13 +365,15 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       
       setLoading(true);
       
-      // Fazer upload da imagem
-      const photoURL = await uploadImage();
-      
-      if (!photoURL) {
-        Alert.alert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
-        setLoading(false);
-        return;
+      // Fazer upload da imagem se houver uma selecionada
+      let photoURL = null;
+      if (localImageUri) {
+        photoURL = await uploadImage();
+        if (!photoURL) {
+          setLoading(false);
+          Alert.alert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
+          return;
+        }
       }
       
       const newGroup = {
@@ -1566,9 +1563,9 @@ export function Groups() {
               <Image
                 source={{ uri: item.photoURL }}
                 style={styles.groupPhoto}
-                defaultSource={require('../assets/images/Logo SplitPay.png')}
-                onError={() => {
-                  console.log('Error loading group photo:', item.photoURL);
+                defaultSource={require('../assets/images/logoPequena.png')}
+                onError={(e) => {
+                  console.log('Error loading group photo:', e.nativeEvent.error);
                 }}
               />
             ) : (
@@ -1913,6 +1910,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     borderRadius: moderateScale(8),
+    marginBottom: SPACING.xxl,
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
@@ -1958,6 +1956,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xl,
     borderRadius: moderateScale(25),
     elevation: 3,
     shadowOffset: {

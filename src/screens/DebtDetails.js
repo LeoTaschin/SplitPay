@@ -160,10 +160,7 @@ export function DebtDetails({ visible, onClose, debt }) {
         >
           <StatusBar barStyle={colors.statusBar} />
           <SafeAreaView style={styles.safeArea}>
-            <LinearGradient
-              colors={[colors.primary + '30', colors.background]}
-              style={styles.headerGradient}
-            />
+            
             
             <TouchableOpacity
               onPress={closeModal}

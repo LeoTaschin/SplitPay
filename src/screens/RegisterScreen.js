@@ -26,7 +26,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const SPACING = 20;
 const { height } = Dimensions.get('window');
-const DEFAULT_PROFILE_IMAGE = require('../assets/images/logoPequena.png');
+const DEFAULT_PROFILE_IMAGE = require('../assets/images/Logo SplitPay.png');
 
 export default function RegisterScreen() {
   const { colors, textStyles } = useTheme();

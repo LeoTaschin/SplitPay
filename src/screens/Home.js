@@ -22,6 +22,7 @@ import { Logo } from '../components/Logo';
 import { MainTabs } from '../components/MainTabs';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useFocusEffect } from '@react-navigation/native';
+import { CustomAlert } from '../components/CustomAlert';
 
 // Componente para animar valores numéricos
 const AnimatedValue = ({ value, style }) => {
@@ -79,6 +80,7 @@ export default function HomeScreen({ navigation }) {
   const { colors, textStyles } = useTheme();
   const { user, loading: authLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('friends');
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const { 
     debtsAsCreditor, 
     debtsAsDebtor, 
@@ -204,42 +206,23 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleSignOut = async () => {
+    setShowLogoutAlert(true);
+  };
+
+  const handleConfirmLogout = async () => {
     try {
-      console.log('Home - handleSignOut - Iniciando processo de logout');
-      Alert.alert(
-        'Sair',
-        'Tem certeza que deseja sair?',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-            onPress: () => console.log('Home - handleSignOut - Logout cancelado'),
-          },
-          {
-            text: 'Sair',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                console.log('Home - handleSignOut - Confirmado, iniciando logout');
-                await signOut();
-                console.log('Home - handleSignOut - Logout realizado com sucesso');
-                
-                console.log('Home - handleSignOut - Redirecionando para Login');
-                navigation.replace('Login');
-              } catch (error) {
-                console.error('Home - handleSignOut - Erro ao fazer logout:', error);
-                Alert.alert(
-                  'Erro',
-                  'Não foi possível fazer logout. Tente novamente.'
-                );
-              }
-            },
-          },
-        ],
-        { cancelable: true }
-      );
+      console.log('Home - handleSignOut - Confirmado, iniciando logout');
+      await signOut();
+      console.log('Home - handleSignOut - Logout realizado com sucesso');
+      
+      console.log('Home - handleSignOut - Redirecionando para Login');
+      navigation.replace('Login');
     } catch (error) {
-      console.error('Home - handleSignOut - Erro ao mostrar diálogo de logout:', error);
+      console.error('Home - handleSignOut - Erro ao fazer logout:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível fazer logout. Tente novamente.'
+      );
     }
   };
 
@@ -336,6 +319,17 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <BottomToolbar activeTab={activeTab} onTabChange={handleTabChange} />
+
+      <CustomAlert
+        visible={showLogoutAlert}
+        title="Sair"
+        message="Tem certeza que deseja sair?"
+        type="warning"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutAlert(false)}
+        confirmText="Sair"
+        cancelText="Cancelar"
+      />
     </SafeAreaView>
   );
 }

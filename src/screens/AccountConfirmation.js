@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, SafeAreaView, Dimensions, Keyboard, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, SafeAreaView, Dimensions, Keyboard, Alert, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/Button';
 import { db } from '../config/firebase';
@@ -7,6 +7,8 @@ import { Logo } from '../components/Logo';
 import { doc, getDoc } from 'firebase/firestore';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useAuth } from '../hooks/useAuth';
+import { signOut } from 'firebase/auth';
+import { CustomAlert } from '../components/CustomAlert';
 
 const { height } = Dimensions.get('window');
 
@@ -15,6 +17,7 @@ export default function AccountConfirmation({ navigation }) {
   const { user, loading: authLoading } = useAuth();
   const [username, setUsername] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   useEffect(() => {
     console.log('AccountConfirmation - useEffect - Montando componente');
@@ -117,6 +120,16 @@ export default function AccountConfirmation({ navigation }) {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigation.replace('Login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+    }
+  };
+
   const userProfilePic = user?.photoURL || 'default_profile_pic_url';
 
   return (
@@ -154,9 +167,29 @@ export default function AccountConfirmation({ navigation }) {
               title="Vamos começar!" 
               onPress={handleStartApp}
             />
+            
+            <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={() => setShowLogoutAlert(true)}
+            >
+              <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
+                Não é {username || 'você'}? <Text style={{ color: colors.primary }}>Sair</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
+
+      <CustomAlert
+        visible={showLogoutAlert}
+        title="Sair da conta"
+        message="Tem certeza que deseja sair?"
+        type="warning"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutAlert(false)}
+        confirmText="Sair"
+        cancelText="Cancelar"
+      />
     </SafeAreaView>
   );
 }
@@ -201,5 +234,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.md,
+  },
+  logoutButton: {
+    marginTop: SPACING.md,
+    padding: SPACING.sm,
   },
 }); 

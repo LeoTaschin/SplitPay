@@ -488,13 +488,19 @@ export function GroupDetail() {
               <Image
                 source={{ uri: group.photoURL }}
                 style={styles.groupPhoto}
+                defaultSource={require('../assets/images/Logo SplitPay.png')}
+                onError={() => {
+                  console.log('Error loading group photo:', group.photoURL);
+                }}
               />
             ) : (
-              <Ionicons
-                name="people"
-                size={moderateScale(48)}
-                color={colors.primary}
-              />
+              <View style={[styles.groupPhoto, { 
+                backgroundColor: colors.primary + '20',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }]}>
+                <Ionicons name="people" size={moderateScale(48)} color={colors.primary} />
+              </View>
             )}
           </View>
 
