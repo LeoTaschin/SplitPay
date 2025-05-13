@@ -764,11 +764,11 @@ export function FriendProfile({ route }) {
                 onPress={balance < 0 ? openDebtModal : openReminderModal}
               >
                 <View style={styles.actionContent}>
-                  <View style={[styles.iconContainer, { backgroundColor: balance < 0 ? colors.error + '20' : colors.success + '20' }]}>
+                  <View style={[styles.iconContainer, { backgroundColor: balance < 0 ? colors.error + '20' : colors.primary + '20' }]}>
                     <Ionicons 
                       name={balance < 0 ? "cash" : "notifications"} 
                       size={24} 
-                      color={balance < 0 ? colors.error : colors.success} 
+                      color={balance < 0 ? colors.error : colors.primary} 
                     />
                   </View>
                   <Text style={[textStyles.body, { color: colors.text, flex: 1 }]}>

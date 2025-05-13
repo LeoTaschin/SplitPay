@@ -13,16 +13,18 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Keyboard,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { db, auth } from '../config/firebase';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, serverTimestamp, deleteDoc, arrayUnion } from 'firebase/firestore';
 
 export function GroupDetail() {
-  const { colors, textStyles } = useTheme();
+  const { colors, textStyles, theme } = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
   const { groupId } = route.params;
@@ -44,6 +46,16 @@ export function GroupDetail() {
   const [isRemovingMember, setIsRemovingMember] = useState(false);
   const [removeMemberModalAnim] = useState(new Animated.Value(0));
   const [removeMemberModalFade] = useState(new Animated.Value(0));
+  const [isAddMembersModalVisible, setIsAddMembersModalVisible] = useState(false);
+  const [addMembersModalAnim] = useState(new Animated.Value(0));
+  const [addMembersModalFade] = useState(new Animated.Value(0));
+  const [searchUsername, setSearchUsername] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedFriends, setSelectedFriends] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [isAddingMembers, setIsAddingMembers] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToGroup();
@@ -132,6 +144,43 @@ export function GroupDetail() {
       ]).start();
     }
   }, [isRemoveMemberModalVisible]);
+
+  useEffect(() => {
+    if (isAddMembersModalVisible) {
+      Animated.parallel([
+        Animated.spring(addMembersModalAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          damping: 15,
+          mass: 1,
+          stiffness: 150,
+        }),
+        Animated.timing(addMembersModalFade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      fetchFriends();
+    } else {
+      Animated.parallel([
+        Animated.timing(addMembersModalAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(addMembersModalFade, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      setSearchUsername('');
+      setSearchResults(null);
+      setSearchError('');
+      setSelectedFriends([]);
+    }
+  }, [isAddMembersModalVisible]);
 
   const subscribeToGroup = () => {
     const groupDocRef = doc(db, 'groups', groupId);
@@ -409,6 +458,141 @@ export function GroupDetail() {
     }
   };
 
+  const fetchFriends = async () => {
+    try {
+      setSearchLoading(true);
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setFriends([]);
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (!userDoc.exists()) {
+        setFriends([]);
+        return;
+      }
+
+      const userData = userDoc.data();
+      
+      if (!userData?.friends?.length) {
+        setFriends([]);
+        return;
+      }
+
+      // Filtrar amigos que ainda não estão no grupo
+      const friendsData = [];
+      for (const friendId of userData.friends) {
+        if (!group.members.includes(friendId)) {
+          const friendDoc = await getDoc(doc(db, 'users', friendId));
+          if (friendDoc.exists()) {
+            const friendData = friendDoc.data();
+            friendsData.push({
+              id: friendDoc.id,
+              ...friendData,
+              photoURL: friendData.photoURL || null,
+              username: friendData.username || friendData.email?.split('@')[0] || 'Usuário',
+              email: friendData.email || ''
+            });
+          }
+        }
+      }
+
+      setFriends(friendsData);
+    } catch (error) {
+      console.error('Erro ao buscar amigos:', error);
+      setFriends([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const searchUser = async (username) => {
+    setSearchLoading(true);
+    setSearchError('');
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setSearchError('Você precisa estar logado');
+        return;
+      }
+
+      const searchTerm = username.trim().toLowerCase();
+      
+      const foundFriends = friends.filter(friend => 
+        friend.username?.toLowerCase().includes(searchTerm) &&
+        !selectedFriends.some(f => f.id === friend.id)
+      );
+
+      if (foundFriends.length === 0) {
+        setSearchResults(null);
+        setSearchError('Nenhum amigo encontrado');
+        return;
+      }
+
+      setSearchResults(foundFriends);
+    } catch (error) {
+      console.error('Erro ao buscar amigos:', error);
+      setSearchError('Erro ao buscar amigos');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const toggleFriendSelection = (friend) => {
+    if (selectedFriends.some(f => f.id === friend.id)) {
+      setSelectedFriends(selectedFriends.filter(f => f.id !== friend.id));
+    } else {
+      setSelectedFriends([...selectedFriends, friend]);
+    }
+  };
+
+  const handleAddMembers = async () => {
+    if (selectedFriends.length === 0) return;
+    
+    try {
+      setIsAddingMembers(true);
+      
+      const groupRef = doc(db, 'groups', groupId);
+      const groupDoc = await getDoc(groupRef);
+      
+      if (groupDoc.exists()) {
+        const groupData = groupDoc.data();
+        const updatedMembers = [...groupData.members, ...selectedFriends.map(f => f.id)];
+        
+        await updateDoc(groupRef, {
+          members: updatedMembers,
+          memberCount: updatedMembers.length,
+          updatedAt: serverTimestamp(),
+        });
+        
+        // Atualizar a referência do grupo nos documentos dos usuários adicionados
+        for (const friend of selectedFriends) {
+          const userRef = doc(db, 'users', friend.id);
+          const userDoc = await getDoc(userRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (!userData.groups?.includes(groupId)) {
+              await updateDoc(userRef, {
+                groups: arrayUnion(groupId)
+              });
+            }
+          }
+        }
+        
+        setIsAddMembersModalVisible(false);
+        setSelectedFriends([]);
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar membros:', error);
+      Alert.alert('Erro', 'Não foi possível adicionar os membros ao grupo. Tente novamente.');
+    } finally {
+      setIsAddingMembers(false);
+    }
+  };
+
   const renderSkeleton = () => (
     <View style={styles.content}>
       <View style={[styles.photoContainer, { backgroundColor: colors.border }]} />
@@ -452,7 +636,9 @@ export function GroupDetail() {
           <Text style={[textStyles.h2, { color: colors.text }]}>Detalhes do Grupo</Text>
           <View style={{ width: 24 }} />
         </View>
-        {renderSkeleton()}
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -568,35 +754,42 @@ export function GroupDetail() {
               ))}
             </View>
 
-            {/* Botão de sair do grupo - sempre visível */}
-            <TouchableOpacity
-              style={[styles.leaveButton, { backgroundColor: colors.error }]}
-              onPress={() => {
-                if (group.admin === currentUser?.uid) {
-                  // Verificar se o usuário é o único membro do grupo
-                  const isOnlyMember = group.members.length === 1 && 
-                    (typeof group.members[0] === 'string' ? 
-                      group.members[0] === currentUser.uid : 
-                      group.members[0].id === currentUser.uid);
-                  
-                  if (isOnlyMember) {
-                    // Se for o único membro, mostrar o modal de confirmação de apagar grupo
-                    setIsLeaveModalVisible(true);
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: colors.primary }]}
+                onPress={() => setIsAddMembersModalVisible(true)}
+              >
+                <Ionicons name="person-add" size={20} color={colors.background} />
+                <Text style={[textStyles.button, { color: colors.background, marginLeft: SPACING.xs }]}>
+                  Adicionar Membros
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.leaveButton, { backgroundColor: colors.error }]}
+                onPress={() => {
+                  if (group.admin === currentUser?.uid) {
+                    const isOnlyMember = group.members.length === 1 && 
+                      (typeof group.members[0] === 'string' ? 
+                        group.members[0] === currentUser.uid : 
+                        group.members[0].id === currentUser.uid);
+                    
+                    if (isOnlyMember) {
+                      setIsLeaveModalVisible(true);
+                    } else {
+                      setIsAdminModalVisible(true);
+                    }
                   } else {
-                    // Se houver outros membros, mostrar o modal de seleção de novo administrador
-                    setIsAdminModalVisible(true);
+                    setIsLeaveModalVisible(true);
                   }
-                } else {
-                  // Se for membro comum, mostrar o modal de confirmação normal
-                  setIsLeaveModalVisible(true);
-                }
-              }}
-            >
-              <Ionicons name="exit-outline" size={20} color={colors.background} />
-              <Text style={[textStyles.button, { color: colors.background, marginLeft: SPACING.xs }]}>
-                Sair do Grupo
-              </Text>
-            </TouchableOpacity>
+                }}
+              >
+                <Ionicons name="exit-outline" size={20} color={colors.background} />
+                <Text style={[textStyles.button, { color: colors.background, marginLeft: SPACING.xs }]}>
+                  Sair do Grupo
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
       </ScrollView>
@@ -756,14 +949,86 @@ export function GroupDetail() {
         animationType="fade"
         onRequestClose={() => setIsLeaveModalVisible(false)}
       >
-        <View style={modalStyles.modalContainer}>
-          <View style={modalStyles.modalOverlay}>
-            <View style={modalStyles.modalContent}>
-              <View style={modalStyles.modalBody}>
-                <View style={[modalStyles.iconContainer, { backgroundColor: colors.error + '15' }]}>
-                  <Ionicons name="exit-outline" size={40} color={colors.error} />
-                </View>
-                <Text style={[textStyles.h4, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>
+        <View style={[modalStyles.modalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[modalStyles.modalContent, { 
+            backgroundColor: colors.background,
+            borderRadius: moderateScale(20),
+            padding: SPACING.lg,
+            width: '85%',
+            maxWidth: moderateScale(380),
+            elevation: 5,
+            shadowColor: '#000',
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+          }]}>
+            <View style={[modalStyles.modalBody, { backgroundColor: colors.card }]}>
+              <View style={[modalStyles.iconContainer, { backgroundColor: colors.error + '15' }]}>
+                <Ionicons name="exit-outline" size={40} color={colors.error} />
+              </View>
+              <Text style={[textStyles.h4, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>
+                {group.admin === currentUser?.uid && 
+                 group.members.length === 1 && 
+                 (typeof group.members[0] === 'string' ? 
+                  group.members[0] === currentUser.uid : 
+                  group.members[0].id === currentUser.uid) ? 
+                  "Apagar Grupo" : 
+                  "Sair do Grupo"}
+              </Text>
+              <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.sm }]}>
+                {group.admin === currentUser?.uid && 
+                 group.members.length === 1 && 
+                 (typeof group.members[0] === 'string' ? 
+                  group.members[0] === currentUser.uid : 
+                  group.members[0].id === currentUser.uid) ? 
+                  "Tem certeza que deseja apagar este grupo? Esta ação não pode ser desfeita." : 
+                  "Tem certeza que deseja sair deste grupo?"}
+              </Text>
+            </View>
+
+            <View style={[modalStyles.buttonContainer, { 
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: SPACING.md,
+              marginTop: 'auto',
+              paddingHorizontal: SPACING.md,
+              paddingBottom: SPACING.xl,
+              paddingTop: SPACING.xl,
+              backgroundColor: colors.card,
+            }]}>
+              <TouchableOpacity
+                style={[modalStyles.button, { 
+                  backgroundColor: colors.error,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.xs,
+                  paddingVertical: SPACING.md,
+                  paddingHorizontal: SPACING.xl,
+                  borderRadius: moderateScale(20),
+                  elevation: 3,
+                  shadowColor: colors.error,
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 3,
+                  width: '100%',
+                }]}
+                onPress={() => handleLeaveGroup()}
+                activeOpacity={0.7}
+                disabled={isLeaving}
+              >
+                <Text style={[textStyles.button, { 
+                  color: colors.background,
+                  fontSize: moderateScale(15),
+                  fontWeight: '600',
+                  letterSpacing: 0.5,
+                }]}>
                   {group.admin === currentUser?.uid && 
                    group.members.length === 1 && 
                    (typeof group.members[0] === 'string' ? 
@@ -772,92 +1037,33 @@ export function GroupDetail() {
                     "Apagar Grupo" : 
                     "Sair do Grupo"}
                 </Text>
-                <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center', marginTop: SPACING.sm }]}>
-                  {group.admin === currentUser?.uid && 
-                   group.members.length === 1 && 
-                   (typeof group.members[0] === 'string' ? 
-                    group.members[0] === currentUser.uid : 
-                    group.members[0].id === currentUser.uid) ? 
-                    "Tem certeza que deseja apagar este grupo? Esta ação não pode ser desfeita." : 
-                    "Tem certeza que deseja sair deste grupo?"}
-                </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={[modalStyles.buttonContainer, { 
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: SPACING.md,
-                marginTop: 'auto',
-                paddingHorizontal: SPACING.md,
-                paddingBottom: SPACING.xl,
-                paddingTop: SPACING.xl,
-              }]}>
-                <TouchableOpacity
-                  style={[modalStyles.button, { 
-                    backgroundColor: colors.error,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: SPACING.xs,
-                    paddingVertical: SPACING.md,
-                    paddingHorizontal: SPACING.xl,
-                    borderRadius: moderateScale(20),
-                    elevation: 3,
-                    shadowColor: colors.error,
-                    shadowOffset: {
-                      width: 0,
-                      height: 2,
-                    },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3,
-                    width: '100%',
-                  }]}
-                  onPress={() => handleLeaveGroup()}
-                  activeOpacity={0.7}
-                  disabled={isLeaving}
-                >
-                  <Text style={[textStyles.button, { 
-                    color: colors.background,
-                    fontSize: moderateScale(15),
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }]}>
-                    {group.admin === currentUser?.uid && 
-                     group.members.length === 1 && 
-                     (typeof group.members[0] === 'string' ? 
-                      group.members[0] === currentUser.uid : 
-                      group.members[0].id === currentUser.uid) ? 
-                      "Apagar Grupo" : 
-                      "Sair do Grupo"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[modalStyles.button, { 
-                    backgroundColor: 'transparent',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: SPACING.xs,
-                    paddingVertical: SPACING.md,
-                    paddingHorizontal: SPACING.xl,
-                    borderRadius: moderateScale(20),
-                    width: '100%',
-                  }]}
-                  onPress={() => setIsLeaveModalVisible(false)}
-                  activeOpacity={0.7}
-                  disabled={isLeaving}
-                >
-                  <Text style={[textStyles.button, { 
-                    color: colors.text,
-                    fontSize: moderateScale(15),
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }]}>Cancelar</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={[modalStyles.button, { 
+                  backgroundColor: 'transparent',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.xs,
+                  paddingVertical: SPACING.md,
+                  paddingHorizontal: SPACING.xl,
+                  borderRadius: moderateScale(20),
+                  width: '100%',
+                }]}
+                onPress={() => setIsLeaveModalVisible(false)}
+                activeOpacity={0.7}
+                disabled={isLeaving}
+              >
+                <Text style={[textStyles.button, { 
+                  color: colors.text,
+                  fontSize: moderateScale(15),
+                  fontWeight: '600',
+                  letterSpacing: 0.5,
+                }]}>Cancelar</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -969,6 +1175,238 @@ export function GroupDetail() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Members Modal */}
+      <Modal
+        visible={isAddMembersModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={() => setIsAddMembersModalVisible(false)}
+      >
+        <View style={[modalStyles.modalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <Animated.View 
+            style={[
+              modalStyles.modalContent, 
+              { 
+                backgroundColor: colors.background,
+                borderRadius: moderateScale(20),
+                padding: SPACING.lg,
+                width: '85%',
+                maxWidth: moderateScale(380),
+                height: '75%',
+                elevation: 5,
+                shadowColor: '#000',
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                transform: [
+                  {
+                    translateY: addMembersModalAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [800, 0]
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            <View style={[modalStyles.modalHeader, { 
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: SPACING.lg,
+            }]}>
+              <Text style={[textStyles.h4, { color: colors.text }]}>
+                Adicionar Membros
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsAddMembersModalVisible(false)}
+                style={[modalStyles.closeButton, { padding: SPACING.xs }]}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[modalStyles.searchContainer, { marginBottom: SPACING.md }]}>
+              <TextInput
+                style={[modalStyles.searchInput(colors, textStyles), { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                }]}
+                placeholder="Buscar amigo..."
+                placeholderTextColor={colors.text2}
+                value={searchUsername}
+                onChangeText={(text) => {
+                  setSearchUsername(text);
+                  if (text.trim()) {
+                    searchUser(text);
+                  } else {
+                    setSearchResults(null);
+                    setSearchError('');
+                  }
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <ScrollView 
+              style={[modalStyles.membersList, { maxHeight: moderateScale(350) }]}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ paddingBottom: SPACING.md }}
+            >
+              {searchLoading ? (
+                <View style={[modalStyles.loadingContainer, { height: moderateScale(100) }]}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : searchError ? (
+                <View style={[modalStyles.emptyStateContainer, { height: moderateScale(100) }]}>
+                  <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+                    {searchError}
+                  </Text>
+                </View>
+              ) : searchResults ? (
+                searchResults.map((friend) => (
+                  <TouchableOpacity
+                    key={friend.id}
+                    style={[
+                      modalStyles.memberItem,
+                      { backgroundColor: colors.card },
+                      selectedFriends.some(f => f.id === friend.id) && { backgroundColor: colors.primary + '20' }
+                    ]}
+                    onPress={() => toggleFriendSelection(friend)}
+                  >
+                    <View style={modalStyles.memberPhotoContainer}>
+                      <Image
+                        source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                        style={modalStyles.memberPhoto}
+                      />
+                    </View>
+                    <View style={modalStyles.memberInfo}>
+                      <Text style={[textStyles.body, { color: colors.text }]}>
+                        {friend.username || friend.email?.split('@')[0]}
+                      </Text>
+                    </View>
+                    {selectedFriends.some(f => f.id === friend.id) && (
+                      <View style={[modalStyles.checkmark, { backgroundColor: colors.primary }]}>
+                        <Ionicons name="checkmark" size={16} color={colors.background} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                friends.map((friend) => (
+                  <TouchableOpacity
+                    key={friend.id}
+                    style={[
+                      modalStyles.memberItem,
+                      { backgroundColor: colors.card },
+                      selectedFriends.some(f => f.id === friend.id) && { backgroundColor: colors.primary + '20' }
+                    ]}
+                    onPress={() => toggleFriendSelection(friend)}
+                  >
+                    <View style={modalStyles.memberPhotoContainer}>
+                      <Image
+                        source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                        style={modalStyles.memberPhoto}
+                      />
+                    </View>
+                    <View style={modalStyles.memberInfo}>
+                      <Text style={[textStyles.body, { color: colors.text }]}>
+                        {friend.username || friend.email?.split('@')[0]}
+                      </Text>
+                    </View>
+                    {selectedFriends.some(f => f.id === friend.id) && (
+                      <View style={[modalStyles.checkmark, { backgroundColor: colors.primary }]}>
+                        <Ionicons name="checkmark" size={16} color={colors.background} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={[modalStyles.buttonContainer, { 
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: SPACING.md,
+              marginTop: 'auto',
+              paddingHorizontal: SPACING.md,
+              paddingBottom: SPACING.xl,
+              paddingTop: SPACING.xl,
+              backgroundColor: colors.card,
+            }]}>
+              <TouchableOpacity
+                style={[modalStyles.button, { 
+                  backgroundColor: colors.primary,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.xs,
+                  paddingVertical: SPACING.md,
+                  paddingHorizontal: SPACING.xl,
+                  borderRadius: moderateScale(20),
+                  elevation: 3,
+                  shadowColor: colors.primary,
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 3,
+                  width: '100%',
+                  opacity: selectedFriends.length > 0 ? 1 : 0.5,
+                }]}
+                onPress={handleAddMembers}
+                activeOpacity={0.7}
+                disabled={selectedFriends.length === 0 || isAddingMembers}
+              >
+                {isAddingMembers ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Text style={[textStyles.button, { 
+                    color: colors.background,
+                    fontSize: moderateScale(15),
+                    fontWeight: '600',
+                    letterSpacing: 0.5,
+                  }]}>
+                    Adicionar {selectedFriends.length} {selectedFriends.length === 1 ? 'Membro' : 'Membros'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[modalStyles.button, { 
+                  backgroundColor: 'transparent',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.xs,
+                  paddingVertical: SPACING.md,
+                  paddingHorizontal: SPACING.xl,
+                  borderRadius: moderateScale(20),
+                  width: '100%',
+                }]}
+                onPress={() => setIsAddMembersModalVisible(false)}
+                activeOpacity={0.7}
+                disabled={isAddingMembers}
+              >
+                <Text style={[textStyles.button, { 
+                  color: colors.text,
+                  fontSize: moderateScale(15),
+                  fontWeight: '600',
+                  letterSpacing: 0.5,
+                }]}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1066,16 +1504,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Estilos para o wireframe
-  skeletonText: {
-    borderRadius: moderateScale(4),
-  },
-  skeletonPhoto: {
-    width: moderateScale(50),
-    height: moderateScale(50),
-    borderRadius: moderateScale(25),
-    marginBottom: SPACING.xs,
-  },
   leaveButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1083,6 +1511,23 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: moderateScale(12),
     marginTop: SPACING.xl,
+  },
+  buttonGroup: {
+    flexDirection: 'column',
+    gap: SPACING.md,
+    marginTop: SPACING.xl,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    borderRadius: moderateScale(12),
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
@@ -1146,8 +1591,20 @@ const modalStyles = StyleSheet.create({
     borderRadius: moderateScale(12),
     marginBottom: SPACING.sm,
   },
+  memberPhotoContainer: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
+    overflow: 'hidden',
+    marginRight: SPACING.md,
+  },
+  memberPhoto: {
+    width: '100%',
+    height: '100%',
+  },
   memberInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   checkmark: {
     width: moderateScale(24),
@@ -1155,5 +1612,35 @@ const modalStyles = StyleSheet.create({
     borderRadius: moderateScale(12),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  closeButton: {
+    padding: SPACING.xs,
+  },
+  searchContainer: {
+    marginBottom: SPACING.md,
+  },
+  searchInput: (colors, textStyles) => ({
+    backgroundColor: colors.card,
+    borderRadius: moderateScale(12),
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.text,
+    ...textStyles.body,
+  }),
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyStateContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.md,
   },
 }); 

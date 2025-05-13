@@ -23,6 +23,7 @@ import { db, auth } from '../config/firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp, runTransaction, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { formatCurrency } from '../utils/formatters';
 import ModernGradient from '../components/ModernGradient';
+import { CustomAlert } from '../components/CustomAlert';
 
 export function NewGroupDebt() {
   const { colors, textStyles } = useTheme();
@@ -38,6 +39,9 @@ export function NewGroupDebt() {
   const [useAllMembers, setUseAllMembers] = useState(true);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertTitle, setAlertTitle] = useState('');
 
   useEffect(() => {
     loadGroupMembers();
@@ -74,14 +78,15 @@ export function NewGroupDebt() {
       }
       
       setGroupMembers(membersData);
-      // Initialize with all members except current user
       setSelectedMembers(membersData
         .filter(member => member.id !== currentUserId)
         .map(member => member.id)
       );
     } catch (error) {
       console.error('Erro ao carregar membros:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os membros do grupo');
+      setAlertTitle('Erro');
+      setAlertMessage('Não foi possível carregar os membros do grupo');
+      setShowAlert(true);
     }
   };
 
@@ -95,17 +100,23 @@ export function NewGroupDebt() {
 
   const handleCreateDebt = async () => {
     if (!description.trim()) {
-      Alert.alert('Erro', 'Por favor, insira uma descrição');
+      setAlertTitle('Atenção');
+      setAlertMessage('Por favor, adicione uma descrição para a despesa');
+      setShowAlert(true);
       return;
     }
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      Alert.alert('Erro', 'Por favor, insira um valor válido');
+      setAlertTitle('Atenção');
+      setAlertMessage('Por favor, adicione um valor para a despesa');
+      setShowAlert(true);
       return;
     }
 
     if (selectedMembers.length === 0) {
-      Alert.alert('Erro', 'Selecione pelo menos um membro');
+      setAlertTitle('Atenção');
+      setAlertMessage('Por favor, selecione pelo menos um membro para a despesa');
+      setShowAlert(true);
       return;
     }
 
@@ -261,7 +272,9 @@ export function NewGroupDebt() {
       navigation.goBack();
     } catch (error) {
       console.error('Erro ao criar dívida:', error);
-      Alert.alert('Erro', 'Não foi possível criar a dívida: ' + error.message);
+      setAlertTitle('Erro');
+      setAlertMessage('Erro ao criar dívida: ' + error.message);
+      setShowAlert(true);
     } finally {
       setLoading(false);
     }
@@ -412,6 +425,13 @@ export function NewGroupDebt() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ModernGradient fullScreen />
+      <CustomAlert
+        visible={showAlert}
+        onClose={() => setShowAlert(false)}
+        title={alertTitle}
+        message={alertMessage}
+        icon="alert-circle"
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}

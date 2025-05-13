@@ -2,7 +2,7 @@
   "expo": {
     "name": "SplitPay",
     "slug": "splitpay",
-    "version": "3.0.0",
+    "version": "4.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.leotaschin.SplitPay",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para permitir que você escolha uma foto de perfil.",
         "NSCameraUsageDescription": "Precisamos acessar sua câmera para permitir que você tire uma foto de perfil.",
@@ -70,6 +70,6 @@
       "enabled": true
     },
     "owner": "leotaschin",
-    "runtimeVersion": "2.0.0"
+    "runtimeVersion": "4.0.0"
   }
 }

@@ -40,9 +40,6 @@ export function About({ navigation }) {
       <ScrollView style={styles.content}>
         <View style={styles.logoSection}>
           <Logo size={moderateScale(80)} />
-          <Text style={[textStyles.h3, { color: colors.text, marginTop: SPACING.md }]}>
-            SplitPay
-          </Text>
           <Text style={[textStyles.caption, { color: colors.text2 }]}>
             Versão {appVersion} ({buildNumber})
           </Text>

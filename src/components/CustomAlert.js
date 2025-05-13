@@ -1,200 +1,35 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  Modal,
   View,
   Text,
-  TouchableOpacity,
+  Modal,
   StyleSheet,
+  TouchableOpacity,
   Dimensions,
-  Animated,
-  Pressable,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-export const CustomAlert = ({
-  visible,
-  title,
-  message,
-  type = 'info', // 'info', 'success', 'warning', 'error'
-  onConfirm,
-  onCancel,
-  confirmText = 'OK',
-  cancelText = 'Cancelar',
-  showCancel = true,
-  icon,
-  customIcon,
-  buttons = [],
-  dismissOnOverlayPress = true,
-  showCloseButton = false,
-  closeOnConfirm = true,
-}) => {
+export function CustomAlert({ visible, onClose, title, message, icon = 'alert-circle' }) {
   const { colors, textStyles } = useTheme();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
-
-  const getIconName = () => {
-    if (icon) return icon;
-    switch (type) {
-      case 'success':
-        return 'checkmark-circle';
-      case 'warning':
-        return 'warning';
-      case 'error':
-        return 'alert-circle';
-      default:
-        return 'information-circle';
-    }
-  };
-
-  const getIconColor = () => {
-    switch (type) {
-      case 'success':
-        return colors.success;
-      case 'warning':
-        return colors.error;
-      case 'error':
-        return colors.error;
-      default:
-        return colors.primary;
-    }
-  };
-
-  const handleOverlayPress = () => {
-    if (dismissOnOverlayPress) {
-      onCancel?.();
-    }
-  };
-
-  const handleConfirm = () => {
-    onConfirm?.();
-    if (closeOnConfirm) {
-      onCancel?.();
-    }
-  };
-
-  const renderButtons = () => {
-    if (buttons.length > 0) {
-      return (
-        <View style={styles.buttonContainer}>
-          {buttons.map((button, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.button,
-                button.style,
-                button.type === 'cancel' && styles.cancelButton,
-                { borderColor: colors.border }
-              ]}
-              onPress={button.onPress}
-            >
-              <Text style={[
-                textStyles.button,
-                { color: button.type === 'cancel' ? colors.text : colors.surface }
-              ]}>
-                {button.text}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.buttonContainer}>
-        {showCancel && (
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton, { borderColor: colors.border }]}
-            onPress={onCancel}
-          >
-            <Text style={[textStyles.button, { color: colors.text }]}>
-              {cancelText}
-            </Text>
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity
-          style={[styles.button, styles.confirmButton, { backgroundColor: getIconColor() }]}
-          onPress={handleConfirm}
-        >
-          <Text style={[textStyles.button, { color: colors.surface }]}>
-            {confirmText}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="none"
-      onRequestClose={onCancel}
+      animationType="fade"
+      onRequestClose={onClose}
     >
-      <Pressable style={styles.modalOverlay} onPress={handleOverlayPress}>
-        <Animated.View 
-          style={[
-            styles.alertContainer,
-            { 
-              backgroundColor: colors.surface,
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
-        >
-          {showCloseButton && (
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onCancel}
-            >
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          )}
-
-          <View style={[styles.iconContainer, { backgroundColor: getIconColor() + '20' }]}>
-            {customIcon || (
-              <Ionicons name={getIconName()} size={moderateScale(32)} color={getIconColor()} />
-            )}
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name={icon} size={moderateScale(32)} color={colors.primary} />
           </View>
           
-          <Text style={[textStyles.h4, styles.title, { color: colors.text }]}>
+          <Text style={[textStyles.h2, styles.title, { color: colors.text }]}>
             {title}
           </Text>
           
@@ -202,12 +37,19 @@ export const CustomAlert = ({
             {message}
           </Text>
 
-          {renderButtons()}
-        </Animated.View>
-      </Pressable>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={onClose}
+          >
+            <Text style={[textStyles.button, { color: colors.white }]}>
+              Entendi
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -216,26 +58,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  alertContainer: {
+  modalContent: {
     width: width * 0.85,
-    maxWidth: 400,
-    padding: SPACING.xl,
     borderRadius: moderateScale(16),
+    padding: SPACING.xl,
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: SPACING.md,
-    right: SPACING.md,
-    padding: SPACING.xs,
+    shadowRadius: 4,
   },
   iconContainer: {
     width: moderateScale(64),
@@ -243,7 +75,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   title: {
     textAlign: 'center',
@@ -253,24 +85,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.xl,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.md,
-    width: '100%',
-  },
   button: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: moderateScale(8),
+    width: '100%',
+    padding: SPACING.md,
+    borderRadius: moderateScale(12),
     alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  confirmButton: {
-    minWidth: 0,
   },
 }); 

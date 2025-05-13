@@ -58,46 +58,35 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
   const [searchError, setSearchError] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [slideAnim] = useState(new Animated.Value(0));
-  const [fadeAnim] = useState(new Animated.Value(0));
   const [uploadingImage, setUploadingImage] = useState(false);
   const [localImageUri, setLocalImageUri] = useState(null);
   const [progressAnim] = useState(new Animated.Value(0.05));
   const [isExpanded, setIsExpanded] = useState(false);
   const [groupCreated, setGroupCreated] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          damping: 20,
-          mass: 1,
-          stiffness: 100,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
+      setIsVisible(true);
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 20,
+        mass: 1,
+        stiffness: 100,
+      }).start();
       fetchFriends();
     } else {
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 20,
-          mass: 1,
-          stiffness: 100,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        mass: 1,
+        stiffness: 100,
+      }).start(() => {
+        setIsVisible(false);
+      });
       
       setCurrentStep(1);
       progressAnim.setValue(0.05);
@@ -678,10 +667,37 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
             showsVerticalScrollIndicator={true}
             bounces={false}
           >
-            {searchResults.map((item) => (
-              <View key={item.id || `search-${item.username}`}>
-                {renderSearchResult({ item })}
-              </View>
+            {searchResults.map((friend, index) => (
+              <React.Fragment key={friend.id}>
+                <TouchableOpacity
+                  style={[
+                    modalStyles.memberItem,
+                    { backgroundColor: colors.card },
+                    selectedFriends.some(f => f.id === friend.id) && { backgroundColor: colors.primary + '20' }
+                  ]}
+                  onPress={() => toggleFriendSelection(friend)}
+                >
+                  <View style={modalStyles.memberPhotoContainer}>
+                    <Image
+                      source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
+                      style={modalStyles.memberPhoto}
+                    />
+                  </View>
+                  <View style={modalStyles.memberInfo}>
+                    <Text style={[textStyles.body, { color: colors.text }]}>
+                      {friend.username || friend.email?.split('@')[0]}
+                    </Text>
+                  </View>
+                  {selectedFriends.some(f => f.id === friend.id) && (
+                    <View style={[modalStyles.checkmark, { backgroundColor: colors.primary }]}>
+                      <Ionicons name="checkmark" size={16} color={colors.background} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {index < searchResults.length - 1 && (
+                  <View style={[modalStyles.separator, { backgroundColor: colors.border }]} />
+                )}
+              </React.Fragment>
             ))}
           </ScrollView>
         </View>
@@ -697,70 +713,40 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
             ) : friends.length > 0 ? (
-              friends.map((friend) => (
-                <TouchableOpacity
-                  key={friend.id}
-                  style={[
-                    modalStyles.friendItem, 
-                    { 
-                      backgroundColor: colors.cardBackground,
-                      borderColor: selectedFriends.some(f => f.id === friend.id) ? colors.primary : 'transparent',
-                      borderWidth: selectedFriends.some(f => f.id === friend.id) ? 2 : 0
-                    }
-                  ]}
-                  onPress={() => toggleFriendSelection(friend)}
-                >
-                  <View style={modalStyles.friendInfo}>
-                    <View style={styles.photoContainer}>
+              friends.map((friend, index) => (
+                <React.Fragment key={friend.id}>
+                  <TouchableOpacity
+                    style={[
+                      modalStyles.memberItem,
+                      { backgroundColor: colors.card },
+                      selectedFriends.some(f => f.id === friend.id) && { backgroundColor: colors.primary + '20' }
+                    ]}
+                    onPress={() => toggleFriendSelection(friend)}
+                  >
+                    <View style={modalStyles.memberPhotoContainer}>
                       <Image
                         source={{ uri: friend.photoURL || 'https://via.placeholder.com/50' }}
-                        style={modalStyles.friendPhoto}
+                        style={modalStyles.memberPhoto}
                       />
                     </View>
-                    <View style={modalStyles.friendTextContainer}>
-                      <View style={modalStyles.nameContainer}>
-                        <Text style={[textStyles.body, { color: colors.text }]}>
-                          {friend.username || friend.email}
-                        </Text>
-                        {friend.isVerified && (
-                          <Ionicons 
-                            name="checkmark-circle" 
-                            size={16} 
-                            color={colors.primary} 
-                            style={modalStyles.verifiedIcon}
-                          />
-                        )}
-                      </View>
-                      <Text 
-                        style={[textStyles.bodySmall, { color: colors.text2 }]}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {friend.email}
+                    <View style={modalStyles.memberInfo}>
+                      <Text style={[textStyles.body, { 
+                        color: colors.text,
+                        fontWeight: '600',
+                      }]}>
+                        {friend.username || friend.email?.split('@')[0]}
                       </Text>
                     </View>
-                  </View>
-                  {selectedFriends.some(f => f.id === friend.id) && (
-                    <View style={[styles.checkmarkContainer, { 
-                      backgroundColor: colors.primary,
-                      width: moderateScale(24),
-                      height: moderateScale(24),
-                      borderRadius: moderateScale(12),
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      elevation: 3,
-                      shadowColor: colors.primary,
-                      shadowOffset: {
-                        width: 0,
-                        height: 2,
-                      },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 3,
-                    }]}>
-                      <Ionicons name="checkmark" size={16} color={colors.background} />
-                    </View>
+                    {selectedFriends.some(f => f.id === friend.id) && (
+                      <View style={[modalStyles.checkmark, { backgroundColor: colors.primary }]}>
+                        <Ionicons name="checkmark" size={16} color={colors.background} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  {index < friends.length - 1 && (
+                    <View style={[modalStyles.separator, { backgroundColor: colors.border }]} />
                   )}
-                </TouchableOpacity>
+                </React.Fragment>
               ))
             ) : (
               <View style={[modalStyles.emptyStateContainer, { height: moderateScale(320) }]}>
@@ -816,15 +802,19 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       <ScrollView 
         style={{ flex: 1 }}
         contentContainerStyle={{ 
-          paddingBottom: SPACING.xl * 3
+          paddingBottom: SPACING.xl * 3,
+          paddingHorizontal: SPACING.md,
+          flexGrow: 1
         }}
         showsVerticalScrollIndicator={true}
         bounces={true}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={[modalStyles.groupDetailsContainer, { 
           alignItems: 'center',
           padding: SPACING.md,
           flex: 1,
+          minHeight: '100%'
         }]}>
           <View style={[modalStyles.groupPhotoLarge, { 
             width: moderateScale(120),
@@ -985,7 +975,8 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                   flexDirection: 'row',
                   alignItems: 'center',
                   width: '100%',
-                  marginBottom: SPACING.sm,
+                  marginBottom: SPACING.md,
+                  paddingVertical: SPACING.xs,
                 }]}>
                   <View style={[modalStyles.participantPhotoLarge, {
                     width: moderateScale(50),
@@ -1026,6 +1017,10 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           paddingHorizontal: SPACING.md,
           paddingBottom: SPACING.xl,
           paddingTop: SPACING.xl,
+          marginTop: 'auto',
+          position: 'relative',
+          bottom: 0,
+          width: '100%',
         }]}>
           <TouchableOpacity
             style={[modalStyles.button, { 
@@ -1140,6 +1135,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
     modalScrollContent: {
       paddingHorizontal: moderateScale(16),
       paddingTop: moderateScale(16),
+      paddingBottom: moderateScale(32),
     },
     stepIndicatorContainer: {
       paddingHorizontal: moderateScale(16),
@@ -1374,25 +1370,75 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       borderRadius: moderateScale(35),
       marginBottom: SPACING.xs,
     },
+    memberItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: SPACING.md,
+      borderRadius: moderateScale(12),
+      marginBottom: SPACING.sm,
+    },
+    memberPhotoContainer: {
+      width: moderateScale(40),
+      height: moderateScale(40),
+      borderRadius: moderateScale(20),
+      overflow: 'hidden',
+      marginRight: SPACING.md,
+    },
+    memberPhoto: {
+      width: '100%',
+      height: '100%',
+    },
+    memberInfo: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    checkmark: {
+      width: moderateScale(24),
+      height: moderateScale(24),
+      borderRadius: moderateScale(12),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    separator: {
+      height: 1,
+      opacity: 0.2,
+      marginHorizontal: SPACING.md,
+    },
   });
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        mass: 1,
+        stiffness: 100,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setIsVisible(false);
+      onClose();
+    });
+  };
 
   return (
     <Modal
-      visible={visible}
+      visible={isVisible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={modalStyles.modalContainer}>
-          <Animated.View 
-            style={[
-              modalStyles.modalOverlay,
-              {
-                opacity: fadeAnim
-              }
-            ]}
-          >
+        <Animated.View style={[modalStyles.modalContainer, { 
+          flex: 1,
+          opacity: fadeAnim 
+        }]}>
+          <View style={[modalStyles.modalOverlay, { flex: 1 }]}>
             <Animated.View 
               style={[
                 modalStyles.modalContent,
@@ -1414,7 +1460,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 </Text>
                 <TouchableOpacity
                   style={modalStyles.closeButton}
-                  onPress={onClose}
+                  onPress={handleClose}
                 >
                   <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
@@ -1423,17 +1469,19 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
               {renderStepIndicator()}
 
               <ScrollView
+                style={{ flex: 1 }}
                 contentContainerStyle={modalStyles.modalScrollContent}
-                showsVerticalScrollIndicator={false}
+                showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled"
+                bounces={true}
               >
                 {currentStep === 1 && renderStep2()}
                 {currentStep === 2 && renderStep1()}
                 {currentStep === 3 && renderStep3()}
               </ScrollView>
             </Animated.View>
-          </Animated.View>
-        </View>
+          </View>
+        </Animated.View>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -1894,8 +1942,8 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    opacity: 0.5,
-    marginVertical: SPACING.xs,
+    opacity: 0.2,
+    marginHorizontal: SPACING.md,
   },
   footerContainer: {
     paddingVertical: SPACING.md,

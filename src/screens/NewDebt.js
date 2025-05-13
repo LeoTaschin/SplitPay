@@ -23,6 +23,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/fires
 import { useDebts } from '../hooks/useDebts';
 import { createDebt } from '../services/debtService';
 import ModernGradient from '../components/ModernGradient';
+import { CustomAlert } from '../components/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -36,6 +37,8 @@ export function NewDebt({ route, navigation }) {
   const [debtor, setDebtor] = useState(forceDebtor || 'other');
   const [isCreditor, setIsCreditor] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const selectedFriend = friend || selectedTarget;
   
@@ -139,7 +142,8 @@ export function NewDebt({ route, navigation }) {
 
   const handleSubmit = async () => {
     if (!amount || !description) {
-      alert('Por favor, preencha todos os campos');
+      setAlertMessage('Por favor, adicione uma descrição para a despesa');
+      setShowAlert(true);
       return;
     }
 
@@ -158,10 +162,12 @@ export function NewDebt({ route, navigation }) {
         await fetchDebts();
         navigation.navigate('Home');
       } else {
-        alert('Erro ao criar dívida: ' + result.error);
+        setAlertMessage('Erro ao criar dívida: ' + result.error);
+        setShowAlert(true);
       }
     } catch (error) {
-      alert('Erro ao criar dívida: ' + error.message);
+      setAlertMessage('Erro ao criar dívida: ' + error.message);
+      setShowAlert(true);
     } finally {
       setLoading(false);
     }
@@ -170,6 +176,13 @@ export function NewDebt({ route, navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ModernGradient fullScreen />
+      <CustomAlert
+        visible={showAlert}
+        onClose={() => setShowAlert(false)}
+        title="Atenção"
+        message={alertMessage}
+        icon="alert-circle"
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
