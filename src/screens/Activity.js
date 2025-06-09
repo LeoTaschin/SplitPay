@@ -20,7 +20,7 @@ import { auth } from '../config/firebase';
 import { DebtDetails } from './DebtDetails';
 
 // Componente para animar valores numéricos
-const AnimatedValue = ({ value, style }) => {
+export const AnimatedValue = ({ value, style }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [displayValue, setDisplayValue] = useState(0);
@@ -77,6 +77,8 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [visibleTransactions, setVisibleTransactions] = useState(10);
+  const ITEMS_PER_PAGE = 10;
   
   // Calcula os totais reais baseados nas dívidas individuais
   const calculatedTotalToReceive = debtsAsCreditor.reduce((sum, debt) => sum + (debt.amount || 0), 0);
@@ -187,7 +189,7 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
   };
 
   // Combine and sort all transactions
-  const recentTransactions = [
+  const allTransactions = [
     ...debtsAsCreditor.map(debt => ({
       ...debt,
       type: 'receive',
@@ -200,7 +202,14 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
       amount: -debt.amount,
       date: debt.createdAt?.toDate() || new Date(),
     })),
-  ].sort((a, b) => b.date - a.date).slice(0, 10);
+  ].sort((a, b) => b.date - a.date);
+
+  const recentTransactions = allTransactions.slice(0, visibleTransactions);
+  const hasMoreTransactions = allTransactions.length > visibleTransactions;
+
+  const loadMoreTransactions = () => {
+    setVisibleTransactions(prev => prev + ITEMS_PER_PAGE);
+  };
 
   const renderTransaction = ({ item }) => {
     const isReceive = item.type === 'receive';
@@ -358,22 +367,40 @@ export function Activity({ userTotals, debtsAsCreditor, debtsAsDebtor, loading, 
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={recentTransactions}
-            renderItem={renderTransaction}
-            keyExtractor={(item, index) => `${item.id || index}-${item.date}`}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.transactionsList}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefreshHandler}
-                tintColor={colors.primary}
-                colors={[colors.primary]}
-                progressBackgroundColor={colors.cardBackground}
-              />
-            }
-          />
+          <>
+            <FlatList
+              data={recentTransactions}
+              renderItem={renderTransaction}
+              keyExtractor={(item, index) => `${item.id || index}-${item.date}`}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.transactionsList}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefreshHandler}
+                  tintColor={colors.primary}
+                  colors={[colors.primary]}
+                  progressBackgroundColor={colors.cardBackground}
+                />
+              }
+              ListFooterComponent={
+                hasMoreTransactions ? (
+                  <TouchableOpacity
+                    style={[styles.loadMoreButton]}
+                    onPress={loadMoreTransactions}
+                  >
+                    <Text style={[textStyles.body, { 
+                      color: colors.primary,
+                      textAlign: 'center',
+                      fontWeight: '600',
+                    }]}>
+                      Ver mais transações
+                    </Text>
+                  </TouchableOpacity>
+                ) : null
+              }
+            />
+          </>
         )}
       </View>
 
@@ -537,5 +564,12 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
       },
     }),
+  },
+  loadMoreButton: {
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xl,
   },
 }); 

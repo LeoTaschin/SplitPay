@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDebts } from '../hooks/useDebts';
 import { formatCurrency } from '../utils/formatters';
 import { useNavigation } from '@react-navigation/native';
+import { AnimatedValue } from './Activity';
 
 export function Friends() {
   const { colors, textStyles } = useTheme();
@@ -413,14 +414,15 @@ export function Friends() {
               </Text>
             </View>
           </View>
-          <Text style={[
-            textStyles.body,
-            {
-              color: isPositive ? colors.success : isNegative ? colors.error : colors.text,
-            }
-          ]}>
-            {isPositive ? '+' : ''}{formatCurrency(balance.toString())}
-          </Text>
+          <AnimatedValue 
+            value={balance}
+            style={[
+              textStyles.body,
+              {
+                color: isPositive ? colors.success : isNegative ? colors.error : colors.text,
+              }
+            ]}
+          />
         </TouchableOpacity>
         {index !== friends.length - 1 && (
           <View style={[styles.separator, { backgroundColor: colors.border }]} />

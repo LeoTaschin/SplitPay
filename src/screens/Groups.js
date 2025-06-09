@@ -625,7 +625,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
   );
 
   const renderStep2 = () => (
-    <View style={modalStyles.modalContent}>
+    <View style={[modalStyles.modalContent, { flex: 1 }]}>
       <View style={modalStyles.searchContainer}>
         <TextInput
           style={[modalStyles.searchInput, { 
@@ -651,17 +651,17 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
       </View>
 
       {searchLoading ? (
-        <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+        <View style={[modalStyles.searchContent, { flex: 1 }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : searchError ? (
-        <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+        <View style={[modalStyles.searchContent, { flex: 1 }]}>
           <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
             {searchError}
           </Text>
         </View>
       ) : searchResults ? (
-        <View style={modalStyles.searchResultsContainer}>
+        <View style={[modalStyles.searchResultsContainer, { flex: 1 }]}>
           <ScrollView
             contentContainerStyle={modalStyles.searchResultsList}
             showsVerticalScrollIndicator={true}
@@ -702,14 +702,14 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
           </ScrollView>
         </View>
       ) : (
-        <View style={modalStyles.friendsListContainer}>
+        <View style={[modalStyles.friendsListContainer, { flex: 1 }]}>
           <ScrollView
             contentContainerStyle={modalStyles.friendsList}
             showsVerticalScrollIndicator={true}
             bounces={false}
           >
             {loading ? (
-              <View style={[modalStyles.searchContent, { height: moderateScale(320) }]}>
+              <View style={[modalStyles.searchContent, { flex: 1 }]}>
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
             ) : friends.length > 0 ? (
@@ -749,7 +749,7 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
                 </React.Fragment>
               ))
             ) : (
-              <View style={[modalStyles.emptyStateContainer, { height: moderateScale(320) }]}>
+              <View style={[modalStyles.emptyStateContainer, { flex: 1 }]}>
                 <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
                   Você não tem amigos adicionados ainda.
                 </Text>
@@ -759,7 +759,13 @@ const CreateGroupModal = ({ visible, onClose, onGroupCreated }) => {
         </View>
       )}
 
-      <View style={modalStyles.buttonContainer}>
+      <View style={[modalStyles.buttonContainer, { 
+        marginTop: 'auto',
+        paddingTop: SPACING.xl,
+        paddingBottom: SPACING.xl,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+      }]}>
         <TouchableOpacity
           style={[modalStyles.button, { 
             backgroundColor: colors.primary,
