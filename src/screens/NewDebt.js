@@ -398,7 +398,7 @@ export function NewDebt({ route, navigation }) {
                     onPress={handleSubmit}
                     disabled={loading}
                   >
-                    <Text style={[textStyles.button, { color: colors.white }]}>
+                    <Text style={[textStyles.button, { color: colors.text }]}>
                       {loading ? 'Criando...' : 'Criar Dívida'}
                     </Text>
                   </TouchableOpacity>

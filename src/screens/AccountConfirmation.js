@@ -1,97 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, SafeAreaView, Dimensions, Keyboard, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, SafeAreaView, Dimensions, Keyboard, Alert, TouchableOpacity, Modal } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/Button';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { Logo } from '../components/Logo';
 import { doc, getDoc } from 'firebase/firestore';
 import { SPACING, moderateScale } from '../utils/dimensions';
 import { useAuth } from '../hooks/useAuth';
 import { signOut } from 'firebase/auth';
 import { CustomAlert } from '../components/CustomAlert';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { CommonActions } from '@react-navigation/native';
 
 const { height } = Dimensions.get('window');
 
-export default function AccountConfirmation({ navigation }) {
-  const { colors, textStyles } = useTheme();
-  const { user, loading: authLoading } = useAuth();
-  const [username, setUsername] = useState('');
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+const TypingUsername = ({ username }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const { colors } = useTheme();
 
   useEffect(() => {
-    console.log('AccountConfirmation - useEffect - Montando componente');
-    console.log('AccountConfirmation - useEffect - Estado:', {
-      uid: user?.uid,
-      email: user?.email,
-      authLoading,
-      isNavigating
-    });
-
-    // Se estiver carregando, não faz nada
-    if (authLoading) {
-      console.log('AccountConfirmation - useEffect - Carregando autenticação, aguardando...');
-      return;
-    }
-
-    // Se não estiver autenticado, redirecionar para login
-    if (!user?.uid) {
-      console.log('AccountConfirmation - useEffect - Usuário não autenticado, redirecionando para login');
-      navigation.replace('Login');
-      return;
-    }
+    if (!username || isTyping) return;
     
-    const fetchUsername = async () => {
-      if (user?.uid) {
-        try {
-          console.log('AccountConfirmation - fetchUsername - Buscando username para:', user.uid);
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const username = userDoc.data().username;
-            console.log('AccountConfirmation - fetchUsername - Username encontrado:', username);
-            setUsername(username);
-          } else {
-            console.log('AccountConfirmation - fetchUsername - Documento do usuário não encontrado');
-          }
-        } catch (error) {
-          console.error('AccountConfirmation - fetchUsername - Erro:', error);
-        }
-      } else {
-        console.log('AccountConfirmation - fetchUsername - Usuário não autenticado');
+    setIsTyping(true);
+    let currentIndex = 0;
+    
+    const typeNextChar = () => {
+      if (currentIndex < username.length) {
+        setDisplayText(username.substring(0, currentIndex + 1));
+        currentIndex++;
+        setTimeout(typeNextChar, 100);
       }
     };
 
-    if (user?.uid) {
-      fetchUsername();
-    }
+    typeNextChar();
+  }, [username]);
 
-    return () => {
-      // Cleanup
+  return <Text style={{ color: colors.primary, fontWeight: '700' }}>{displayText}</Text>;
+};
+
+const TypingUsername2 = ({ username }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    if (!username || isTyping) return;
+    
+    setIsTyping(true);
+    let currentIndex = 0;
+    
+    const typeNextChar = () => {
+      if (currentIndex < username.length) {
+        setDisplayText(username.substring(0, currentIndex + 1));
+        currentIndex++;
+        setTimeout(typeNextChar, 100);
+      }
     };
+
+    typeNextChar();
+  }, [username]);
+
+  return <Text style={{ color: colors.text2 }}>{displayText}</Text>;
+};
+
+export default function AccountConfirmation({ navigation }) {
+  const { colors, textStyles } = useTheme();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [username, setUsername] = useState('');
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUsername(userDoc.data().username);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar username:', error);
+      }
+    };
+
+    fetchUsername();
+  }, [user]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user?.uid) {
+      navigation.replace('Login');
+    }
   }, [user, authLoading, navigation]);
 
   const handleStartApp = async () => {
     try {
-      // Previne múltiplos cliques
-      if (isNavigating) {
-        console.log('AccountConfirmation - handleStartApp - Já está navegando, ignorando clique');
-        return;
-      }
+      if (isNavigating) return;
 
       setIsNavigating(true);
-      console.log('AccountConfirmation - handleStartApp - INÍCIO');
-      console.log('AccountConfirmation - handleStartApp - Estado:', {
-        uid: user?.uid,
-        email: user?.email,
-        username,
-        photoURL: user?.photoURL,
-        isAuthenticated: !!user,
-        authLoading
-      });
 
-      // Verifica se ainda está autenticado antes de navegar
       if (!user?.uid) {
-        console.error('AccountConfirmation - handleStartApp - ERRO: Usuário não está autenticado');
         Alert.alert(
           'Erro',
           'Você foi desconectado. Por favor, faça login novamente.'
@@ -100,17 +111,11 @@ export default function AccountConfirmation({ navigation }) {
         return;
       }
 
-      // Se estiver carregando, espera
-      if (authLoading) {
-        console.log('AccountConfirmation - handleStartApp - Aguardando carregamento da autenticação');
-        return;
-      }
+      if (authLoading) return;
 
-      console.log('AccountConfirmation - handleStartApp - Navegando para Home');
       navigation.navigate('Home');
-      console.log('AccountConfirmation - handleStartApp - Navegação para Home concluída');
     } catch (error) {
-      console.error('AccountConfirmation - handleStartApp - ERRO:', error);
+      console.error('Erro ao iniciar app:', error);
       Alert.alert(
         'Erro',
         'Ocorreu um erro ao iniciar o app. Por favor, tente novamente.'
@@ -123,6 +128,7 @@ export default function AccountConfirmation({ navigation }) {
   const handleLogout = async () => {
     try {
       await signOut();
+      setShowLogoutModal(false);
       navigation.replace('Login');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
@@ -132,10 +138,55 @@ export default function AccountConfirmation({ navigation }) {
 
   const userProfilePic = user?.photoURL || 'default_profile_pic_url';
 
+  const LogoutModal = () => (
+    <Modal
+      visible={showLogoutModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowLogoutModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.error + '20' }]}>
+              <Icon name="logout" size={moderateScale(32)} color={colors.error} />
+            </View>
+            <Text style={[textStyles.h3, { color: colors.text, marginTop: SPACING.md }]}>
+              Sair da conta
+            </Text>
+          </View>
+          
+          <View style={styles.modalBody}>
+            <Text style={[textStyles.body, { color: colors.text2, textAlign: 'center' }]}>
+              Tem certeza que deseja sair da sua conta? Você precisará fazer login novamente para acessar o SplitPay.
+            </Text>
+          </View>
+
+          <View style={styles.modalFooter}>
+            <Button 
+              title="Sair da conta"
+              onPress={handleLogout}
+              variant="danger"
+            />
+            
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowLogoutModal(false)}
+            >
+              <Text style={[textStyles.body, { color: colors.text2 }]}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.logoContainer}>
-        <Logo size={height * 0.1} />
+        <Logo size={height * 0.08} />
       </View>
       
       <View style={styles.mainContent}>
@@ -155,9 +206,9 @@ export default function AccountConfirmation({ navigation }) {
               style={[styles.profilePic, { borderColor: colors.primary }]} 
             />
             <Text style={[textStyles.body, { color: colors.text, marginTop: SPACING.sm }]}>
-              Olá, {username || 'Usuário'}
+              Olá, <TypingUsername username={username} />
             </Text>
-            <Text style={[textStyles.bodySmall, { color: colors.primary, marginTop: SPACING.xs }]}>
+            <Text style={[textStyles.bodySmall, { color: colors.text, marginTop: SPACING.xs }]}>
               Comece a usar o SplitPay agora!
             </Text>
           </View>
@@ -170,26 +221,17 @@ export default function AccountConfirmation({ navigation }) {
             
             <TouchableOpacity 
               style={styles.logoutButton}
-              onPress={() => setShowLogoutAlert(true)}
+              onPress={() => setShowLogoutModal(true)}
             >
               <Text style={[textStyles.bodySmall, { color: colors.text2 }]}>
-                Não é {username || 'você'}? <Text style={{ color: colors.primary }}>Sair</Text>
+                Não é <TypingUsername2 username={username} />? <Text style={{ color: colors.primary }}>Sair</Text>
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
-      <CustomAlert
-        visible={showLogoutAlert}
-        title="Sair da conta"
-        message="Tem certeza que deseja sair?"
-        type="warning"
-        onConfirm={handleLogout}
-        onCancel={() => setShowLogoutAlert(false)}
-        confirmText="Sair"
-        cancelText="Cancelar"
-      />
+      <LogoutModal />
     </SafeAreaView>
   );
 }
@@ -238,5 +280,43 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginTop: SPACING.md,
     padding: SPACING.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    borderRadius: moderateScale(16),
+    padding: SPACING.lg,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  iconContainer: {
+    width: moderateScale(64),
+    height: moderateScale(64),
+    borderRadius: moderateScale(32),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: {
+    marginBottom: SPACING.xl,
+  },
+  modalFooter: {
+    gap: SPACING.md,
+  },
+  cancelButton: {
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 }); 
