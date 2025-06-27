@@ -322,9 +322,10 @@ export default function HomeScreen({ navigation }) {
 
       <CustomAlert
         visible={showLogoutAlert}
-        title="Sair"
-        message="Tem certeza que deseja sair?"
-        type="warning"
+        title="Sair da conta"
+        message="Tem certeza que deseja sair da sua conta? Você será desconectado."
+        type="info"
+        icon="log-out-outline"
         onConfirm={handleConfirmLogout}
         onCancel={() => setShowLogoutAlert(false)}
         confirmText="Sair"

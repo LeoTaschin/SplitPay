@@ -21,6 +21,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { CustomAlert } from '../components/CustomAlert';
 
 export function Profile({ onEditProfile }) {
   const { colors, textStyles } = useTheme();
@@ -29,6 +30,7 @@ export function Profile({ onEditProfile }) {
   const [username, setUsername] = useState('');
   const [joinDate, setJoinDate] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -80,18 +82,20 @@ export function Profile({ onEditProfile }) {
     {
       icon: 'log-out-outline',
       title: 'Sair',
-      onPress: async () => {
-        try {
-          await signOut();
-          navigation.navigate('Login');
-        } catch (error) {
-          console.error('Erro ao fazer logout:', error);
-          Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
-        }
-      },
+      onPress: () => setShowLogoutAlert(true),
       color: colors.error,
     },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -186,6 +190,18 @@ export function Profile({ onEditProfile }) {
           ))}
         </View>
       </ScrollView>
+
+      <CustomAlert
+        visible={showLogoutAlert}
+        title="Sair da conta"
+        message="Tem certeza que deseja sair da sua conta? Você será desconectado."
+        type="info"
+        icon="log-out-outline"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutAlert(false)}
+        confirmText="Sair"
+        cancelText="Cancelar"
+      />
     </SafeAreaView>
   );
 }
