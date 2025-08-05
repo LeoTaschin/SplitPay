@@ -23,17 +23,18 @@
     },
     "production": {
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "autoIncrement": true
       },
       "channel": "production"
     }
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "ltaschin21@gmail.com",
-        "ascAppId": "6743552828"
-      }
+              "ios": {
+          "appleId": "ltaschin21@gmail.com",
+          "ascAppId": "6743552828"
+        }
     }
   }
 }

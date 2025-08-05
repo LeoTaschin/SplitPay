@@ -1,0 +1,105 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "back": "Voltar",
+    "next": "Próximo",
+    "done": "Concluído"
+  },
+  "navigation": {
+    "home": "Início",
+    "friends": "Amigos",
+    "activity": "Atividade",
+    "profile": "Perfil",
+    "settings": "Configurações"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Cadastrar",
+    "logout": "Sair",
+    "email": "E-mail",
+    "password": "Senha",
+    "confirmPassword": "Confirmar senha",
+    "forgotPassword": "Esqueci minha senha",
+    "loginTitle": "Bem-vindo de volta",
+    "registerTitle": "Criar conta",
+    "loginSubtitle": "Entre com suas credenciais",
+    "registerSubtitle": "Crie sua conta gratuita"
+  },
+  "home": {
+    "balance": "Saldo",
+    "youOwe": "Você deve",
+    "youAreOwed": "Você deve receber",
+    "totalBalance": "Saldo total",
+    "recentActivity": "Atividade recente",
+    "noActivity": "Nenhuma atividade ainda",
+    "addDebt": "Adicionar dívida",
+    "addGroupDebt": "Dívida em grupo"
+  },
+  "debts": {
+    "newDebt": "Nova dívida",
+    "debtAmount": "Valor da dívida",
+    "debtDescription": "Descrição",
+    "debtDate": "Data",
+    "debtCategory": "Categoria",
+    "debtStatus": "Status",
+    "pending": "Pendente",
+    "paid": "Pago",
+    "settled": "Liquidado",
+    "debtTo": "Dívida para",
+    "debtFrom": "Dívida de"
+  },
+  "friends": {
+    "addFriend": "Adicionar amigo",
+    "searchFriends": "Buscar amigos",
+    "noFriends": "Nenhum amigo encontrado",
+    "friendProfile": "Perfil do amigo",
+    "totalDebts": "Total de dívidas"
+  },
+  "groups": {
+    "createGroup": "Criar grupo",
+    "groupName": "Nome do grupo",
+    "groupMembers": "Membros",
+    "addMember": "Adicionar membro",
+    "groupDebt": "Dívida do grupo",
+    "splitEqually": "Dividir igualmente"
+  },
+  "profile": {
+    "editProfile": "Editar perfil",
+    "personalInfo": "Informações pessoais",
+    "name": "Nome",
+    "phone": "Telefone",
+    "photo": "Foto",
+    "changePhoto": "Alterar foto",
+    "accountSettings": "Configurações da conta"
+  },
+  "settings": {
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificações",
+    "privacy": "Privacidade",
+    "help": "Ajuda",
+    "about": "Sobre",
+    "version": "Versão"
+  },
+  "notifications": {
+    "newDebt": "Nova dívida adicionada",
+    "debtPaid": "Dívida paga",
+    "debtReminder": "Lembrete de dívida",
+    "friendRequest": "Solicitação de amizade"
+  },
+  "errors": {
+    "networkError": "Erro de conexão",
+    "invalidEmail": "E-mail inválido",
+    "weakPassword": "Senha muito fraca",
+    "userNotFound": "Usuário não encontrado",
+    "wrongPassword": "Senha incorreta",
+    "emailInUse": "E-mail já está em uso"
+  }
+} 
